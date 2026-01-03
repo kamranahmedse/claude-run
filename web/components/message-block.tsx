@@ -34,6 +34,7 @@ import {
   FileContentRenderer,
   AskQuestionRenderer,
   TaskRenderer,
+  CopyButton,
 } from "./tool-renderers";
 
 interface MessageBlockProps {
@@ -48,6 +49,23 @@ function buildToolMap(content: ContentBlock[]): Map<string, string> {
     }
   }
   return toolMap;
+}
+
+function extractMessageText(content: string | ContentBlock[] | undefined): string {
+  if (!content) {
+    return "";
+  }
+  if (typeof content === "string") {
+    return sanitizeText(content);
+  }
+  // Extract text from all text blocks and join them
+  return content
+    .filter((block): block is ContentBlock & { text: string } =>
+      block.type === "text" && typeof block.text === "string"
+    )
+    .map((block) => sanitizeText(block.text))
+    .filter((text) => text.length > 0)
+    .join("\n\n");
 }
 
 const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
@@ -107,29 +125,38 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
     return null;
   }
 
+  const messageText = extractMessageText(content);
+
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} min-w-0`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} min-w-0 group`}>
       <div className="max-w-[85%] min-w-0">
-        <div
-          className={`px-3.5 py-2.5 rounded-2xl overflow-hidden ${
-            isUser
-              ? "bg-indigo-600/80 text-indigo-50 rounded-br-md"
-              : "bg-cyan-700/50 text-zinc-100 rounded-bl-md"
-          }`}
-        >
-          {typeof content === "string" ? (
-            isUser ? (
-              <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">
-                {sanitizeText(content)}
-              </div>
+        <div className="relative">
+          <div
+            className={`px-3.5 py-2.5 rounded-2xl overflow-hidden ${
+              isUser
+                ? "bg-indigo-600/80 text-indigo-50 rounded-br-md"
+                : "bg-cyan-700/50 text-zinc-100 rounded-bl-md"
+            }`}
+          >
+            {typeof content === "string" ? (
+              isUser ? (
+                <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">
+                  {sanitizeText(content)}
+                </div>
+              ) : (
+                <MarkdownRenderer content={sanitizeText(content)} />
+              )
             ) : (
-              <MarkdownRenderer content={sanitizeText(content)} />
-            )
-          ) : (
-            <div className="flex flex-col gap-1">
-              {visibleTextBlocks.map((block, index) => (
-                <ContentBlockRenderer key={index} block={block} isUser={isUser} toolMap={toolMap} />
-              ))}
+              <div className="flex flex-col gap-1">
+                {visibleTextBlocks.map((block, index) => (
+                  <ContentBlockRenderer key={index} block={block} isUser={isUser} toolMap={toolMap} />
+                ))}
+              </div>
+            )}
+          </div>
+          {messageText && (
+            <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <CopyButton text={messageText} className="bg-zinc-800/80 hover:bg-zinc-700/80" />
             </div>
           )}
         </div>
