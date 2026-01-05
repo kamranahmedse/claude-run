@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import type { ConversationMessage } from "@claude-run/api";
+import type { ConversationMessage, Session } from "@claude-run/api";
 import MessageBlock from "./message-block";
 import ScrollToBottomButton from "./scroll-to-bottom-button";
+import SessionInfoButton from "./session-info-button";
 
 const MAX_RETRIES = 10;
 const BASE_RETRY_DELAY_MS = 1000;
@@ -10,10 +11,11 @@ const SCROLL_THRESHOLD_PX = 100;
 
 interface SessionViewProps {
   sessionId: string;
+  session?: Session | null;
 }
 
 function SessionView(props: SessionViewProps) {
-  const { sessionId } = props;
+  const { sessionId, session = null } = props;
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,6 +129,8 @@ function SessionView(props: SessionViewProps) {
       className="h-full overflow-y-auto bg-zinc-950"
     >
       <div className="mx-auto max-w-3xl px-4 py-4">
+        <SessionInfoButton session={session} />
+
         {summary && (
           <div className="mb-6 rounded-xl border border-zinc-800/60 bg-zinc-900/50 p-4">
             <h2 className="text-sm font-medium text-zinc-200 leading-relaxed">
