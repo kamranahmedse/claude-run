@@ -32,7 +32,7 @@ function SessionInfoButton(props: SessionInfoButtonProps) {
         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-500/10 hover:bg-slate-500/15 text-[11px] text-slate-300 transition-colors border border-slate-500/20"
       >
         <Info size={12} className="opacity-60" aria-hidden="true" />
-        <span className="font-medium text-slate-200">Session</span>
+        <span className="font-medium text-slate-200">Session Details</span>
         <span className="text-[10px] opacity-40 ml-0.5">
           {expanded ? "▼" : "▶"}
         </span>
