@@ -127,11 +127,35 @@ export function createServer(options: ServerOptions) {
         });
 
         while (isConnected) {
+          await stream.sleep(5000);
+          if (!isConnected) break;
+
+          // Periodic poll to catch changes the watcher may have missed
+          try {
+            const current = await getSessions();
+            const newOrUpdated = current.filter((s) => {
+              const known = knownSessions.get(s.id);
+              return known === undefined || known !== s.timestamp;
+            });
+
+            for (const s of current) {
+              knownSessions.set(s.id, s.timestamp);
+            }
+
+            if (newOrUpdated.length > 0) {
+              await stream.writeSSE({
+                event: "sessionsUpdate",
+                data: JSON.stringify(newOrUpdated),
+              });
+            }
+          } catch {
+            // Ignore poll errors
+          }
+
           await stream.writeSSE({
             event: "heartbeat",
             data: JSON.stringify({ timestamp: Date.now() }),
           });
-          await stream.sleep(30000);
         }
       } catch {
         // Connection closed
@@ -197,11 +221,24 @@ export function createServer(options: ServerOptions) {
         });
 
         while (isConnected) {
+          await stream.sleep(5000);
+          if (!isConnected) break;
+
+          // Periodic poll for new messages in case watcher missed events
+          const { messages: newMessages, nextOffset: newOffset } =
+            await getConversationStream(sessionId, offset);
+          if (newMessages.length > 0) {
+            offset = newOffset;
+            await stream.writeSSE({
+              event: "messages",
+              data: JSON.stringify(newMessages),
+            });
+          }
+
           await stream.writeSSE({
             event: "heartbeat",
             data: JSON.stringify({ timestamp: Date.now() }),
           });
-          await stream.sleep(30000);
         }
       } catch {
         // Connection closed
