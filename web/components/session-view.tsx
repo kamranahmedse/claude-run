@@ -97,7 +97,7 @@ function SessionView(props: SessionViewProps) {
       return;
     }
     isScrollingProgrammaticallyRef.current = true;
-    lastMessageRef.current.scrollIntoView({ behavior: "instant" });
+    lastMessageRef.current.scrollIntoView({ behavior: "instant", block: "end" });
     requestAnimationFrame(() => {
       isScrollingProgrammaticallyRef.current = false;
     });
