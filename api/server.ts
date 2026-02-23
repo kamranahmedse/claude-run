@@ -14,6 +14,8 @@ import {
   getConversationStream,
   invalidateHistoryCache,
   addToFileIndex,
+  searchSessions,
+  invalidateSearchIndex,
 } from "./storage";
 import {
   initWatcher,
@@ -74,6 +76,15 @@ export function createServer(options: ServerOptions) {
   app.get("/api/projects", async (c) => {
     const projects = await getProjects();
     return c.json(projects);
+  });
+
+  app.get("/api/search", async (c) => {
+    const query = c.req.query("q");
+    if (!query || !query.trim()) {
+      return c.json([]);
+    }
+    const results = await searchSessions(query);
+    return c.json(results);
   });
 
   app.get("/api/sessions/stream", async (c) => {
@@ -231,6 +242,7 @@ export function createServer(options: ServerOptions) {
 
   onSessionChange((sessionId: string, filePath: string) => {
     addToFileIndex(sessionId, filePath);
+    invalidateSearchIndex(sessionId);
   });
 
   startWatcher();

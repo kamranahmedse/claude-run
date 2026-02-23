@@ -63,6 +63,15 @@ const fileIndex = new Map<string, string>();
 let historyCache: HistoryEntry[] | null = null;
 const pendingRequests = new Map<string, Promise<unknown>>();
 
+// Search index: sessionId -> full text content
+const searchIndex = new Map<string, string>();
+
+export interface SearchResult {
+  session: Session;
+  score: number;
+  matchContext?: string;
+}
+
 export function initStorage(dir?: string): void {
   claudeDir = dir ?? join(homedir(), ".claude");
   projectsDir = join(claudeDir, "projects");
@@ -87,6 +96,29 @@ function encodeProjectPath(path: string): string {
 function getProjectName(projectPath: string): string {
   const parts = projectPath.split("/").filter(Boolean);
   return parts[parts.length - 1] || projectPath;
+}
+
+function extractTextFromContent(content: string | ContentBlock[]): string {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  const parts: string[] = [];
+  for (const block of content) {
+    if (block.type === "text" && block.text) {
+      parts.push(block.text);
+    } else if (block.type === "thinking" && block.thinking) {
+      parts.push(block.thinking);
+    } else if (block.type === "tool_result" && typeof block.content === "string") {
+      parts.push(block.content);
+    }
+  }
+  return parts.join(" ");
+}
+
+function normalizeText(text: string): string {
+  // Lowercase and convert underscores to spaces for matching
+  return text.toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ").trim();
 }
 
 async function buildFileIndex(): Promise<void> {
@@ -375,5 +407,134 @@ export async function getConversationStream(
     if (fileHandle) {
       await fileHandle.close();
     }
+  }
+}
+
+async function getSessionFullText(sessionId: string): Promise<string> {
+  // Check cache first
+  if (searchIndex.has(sessionId)) {
+    return searchIndex.get(sessionId)!;
+  }
+
+  const messages = await getConversation(sessionId);
+  const parts: string[] = [];
+
+  for (const msg of messages) {
+    if (msg.message?.content) {
+      parts.push(extractTextFromContent(msg.message.content));
+    }
+    if (msg.summary) {
+      parts.push(msg.summary);
+    }
+  }
+
+  const fullText = parts.join(" ");
+  searchIndex.set(sessionId, fullText);
+  return fullText;
+}
+
+function getRecencyMultiplier(timestamp: number): number {
+  const now = Date.now();
+  const age = now - timestamp;
+  const day = 24 * 60 * 60 * 1000;
+
+  if (age < day) return 3.0; // Last 24 hours
+  if (age < 7 * day) return 2.0; // Last 7 days
+  if (age < 30 * day) return 1.5; // Last 30 days
+  return 1.0;
+}
+
+function searchMatches(
+  text: string,
+  queryWords: string[]
+): { matches: boolean; matchContext?: string } {
+  const normalizedText = normalizeText(text);
+
+  // Fast check: all query words must appear as substrings
+  for (const word of queryWords) {
+    if (!normalizedText.includes(word)) {
+      return { matches: false };
+    }
+  }
+
+  // Prefix matching: each query word must prefix some word in text
+  const textWords = normalizedText.split(/\s+/);
+  for (const queryWord of queryWords) {
+    const found = textWords.some((tw) => tw.startsWith(queryWord));
+    if (!found) {
+      return { matches: false };
+    }
+  }
+
+  // Find context around first match
+  const firstQueryWord = queryWords[0];
+  const idx = normalizedText.indexOf(firstQueryWord);
+  if (idx !== -1) {
+    const start = Math.max(0, idx - 50);
+    const end = Math.min(normalizedText.length, idx + firstQueryWord.length + 100);
+    let context = text.substring(start, end);
+    if (start > 0) context = "..." + context;
+    if (end < text.length) context = context + "...";
+    return { matches: true, matchContext: context };
+  }
+
+  return { matches: true };
+}
+
+export async function searchSessions(query: string): Promise<SearchResult[]> {
+  const queryWords = normalizeText(query).split(/\s+/).filter(Boolean);
+
+  if (queryWords.length === 0) {
+    return [];
+  }
+
+  const sessions = await getSessions();
+  const results: SearchResult[] = [];
+
+  // Process sessions in parallel batches for performance
+  const batchSize = 10;
+  for (let i = 0; i < sessions.length; i += batchSize) {
+    const batch = sessions.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map(async (session) => {
+        const fullText = await getSessionFullText(session.id);
+        const { matches, matchContext } = searchMatches(fullText, queryWords);
+
+        if (matches) {
+          const baseScore = queryWords.length;
+          const recencyMultiplier = getRecencyMultiplier(session.timestamp);
+          return {
+            session,
+            score: baseScore * recencyMultiplier,
+            matchContext,
+          };
+        }
+        return null;
+      })
+    );
+
+    for (const result of batchResults) {
+      if (result) {
+        results.push(result);
+      }
+    }
+  }
+
+  // Sort by score descending, then by timestamp descending
+  results.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return b.session.timestamp - a.session.timestamp;
+  });
+
+  return results;
+}
+
+export function invalidateSearchIndex(sessionId?: string): void {
+  if (sessionId) {
+    searchIndex.delete(sessionId);
+  } else {
+    searchIndex.clear();
   }
 }

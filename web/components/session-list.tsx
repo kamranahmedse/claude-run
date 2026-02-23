@@ -1,7 +1,13 @@
-import { useState, useMemo, memo, useRef } from "react";
+import { useState, useMemo, memo, useRef, useEffect, useCallback } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { Session } from "@claude-run/api";
 import { formatTime } from "../utils";
+
+interface SearchResult {
+  session: Session;
+  score: number;
+  matchContext?: string;
+}
 
 interface SessionListProps {
   sessions: Session[];
@@ -10,30 +16,75 @@ interface SessionListProps {
   loading?: boolean;
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 const SessionList = memo(function SessionList(props: SessionListProps) {
   const { sessions, selectedSession, onSelectSession, loading } = props;
   const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
+  const [searching, setSearching] = useState(false);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const filteredSessions = useMemo(() => {
-    if (!search.trim()) {
-      return sessions;
+  const debouncedSearch = useDebounce(search, 300);
+
+  // Perform search when debounced search value changes
+  useEffect(() => {
+    if (!debouncedSearch.trim()) {
+      setSearchResults(null);
+      return;
     }
-    const query = search.toLowerCase();
-    return sessions.filter(
-      (s) =>
-        s.display.toLowerCase().includes(query) ||
-        s.projectName.toLowerCase().includes(query)
-    );
-  }, [sessions, search]);
+
+    setSearching(true);
+    fetch(`/api/search?q=${encodeURIComponent(debouncedSearch)}`)
+      .then((res) => res.json())
+      .then((results: SearchResult[]) => {
+        setSearchResults(results);
+        setSearching(false);
+      })
+      .catch((err) => {
+        console.error("Search error:", err);
+        setSearching(false);
+      });
+  }, [debouncedSearch]);
+
+  // When not searching, use the passed sessions; when searching, use search results
+  const displaySessions = useMemo(() => {
+    if (searchResults !== null) {
+      return searchResults.map((r) => r.session);
+    }
+    return sessions;
+  }, [sessions, searchResults]);
+
+  // Map session id to match context for display
+  const matchContextMap = useMemo(() => {
+    if (!searchResults) return new Map<string, string>();
+    const map = new Map<string, string>();
+    for (const r of searchResults) {
+      if (r.matchContext) {
+        map.set(r.session.id, r.matchContext);
+      }
+    }
+    return map;
+  }, [searchResults]);
 
   const virtualizer = useVirtualizer({
-    count: filteredSessions.length,
+    count: displaySessions.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 76,
     overscan: 10,
     measureElement: (element) => element.getBoundingClientRect().height,
   });
+
+  const isSearching = searching || (search.trim() !== "" && search !== debouncedSearch);
 
   return (
     <div className="h-full overflow-hidden bg-zinc-950 flex flex-col">
@@ -83,7 +134,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
       </div>
 
       <div ref={parentRef} className="flex-1 overflow-y-auto">
-        {loading ? (
+        {loading || isSearching ? (
           <div className="flex items-center justify-center py-8">
             <svg
               className="w-5 h-5 text-zinc-600 animate-spin"
@@ -105,7 +156,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
               />
             </svg>
           </div>
-        ) : filteredSessions.length === 0 ? (
+        ) : displaySessions.length === 0 ? (
           <p className="py-8 text-center text-xs text-zinc-600">
             {search ? "No sessions match" : "No sessions found"}
           </p>
@@ -118,7 +169,8 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
             }}
           >
             {virtualizer.getVirtualItems().map((virtualItem) => {
-              const session = filteredSessions[virtualItem.index];
+              const session = displaySessions[virtualItem.index];
+              const matchContext = matchContextMap.get(session.id);
               return (
                 <button
                   key={session.id}
@@ -149,6 +201,11 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                   <p className="text-[12px] text-zinc-300 leading-snug line-clamp-2 break-words">
                     {session.display}
                   </p>
+                  {matchContext && (
+                    <p className="text-[11px] text-zinc-500 leading-snug line-clamp-2 break-words mt-1 italic">
+                      {matchContext}
+                    </p>
+                  )}
                 </button>
               );
             })}
@@ -158,7 +215,9 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
 
       <div className="px-3 py-2 border-t border-zinc-800/60">
         <div className="text-[10px] text-zinc-600 text-center">
-          {sessions.length} session{sessions.length !== 1 ? "s" : ""}
+          {searchResults !== null
+            ? `${displaySessions.length} result${displaySessions.length !== 1 ? "s" : ""}`
+            : `${sessions.length} session${sessions.length !== 1 ? "s" : ""}`}
         </div>
       </div>
     </div>
