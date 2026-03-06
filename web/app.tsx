@@ -29,6 +29,26 @@ interface RetryState {
   delayMs: number;
 }
 
+function escapeForPosixSingleQuotes(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+function escapeForDoubleQuotes(value: string): string {
+  return value.replace(/"/g, '\\"');
+}
+
+function buildResumeCommand(sessionId: string, projectPath: string): string {
+  const isWindowsPath =
+    /^[a-zA-Z]:[\\/]/.test(projectPath) || projectPath.includes("\\");
+
+  if (isWindowsPath) {
+    const escapedPath = escapeForDoubleQuotes(projectPath);
+    return `cd "${escapedPath}"; claude --resume ${sessionId}`;
+  }
+
+  return `cd ${escapeForPosixSingleQuotes(projectPath)} && claude --resume ${sessionId}`;
+}
+
 interface SessionHeaderProps {
   session: Session;
   copied: boolean;
@@ -124,12 +144,16 @@ function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const handleCopyResumeCommand = useCallback(
-    (sessionId: string, projectPath: string) => {
-      const command = `cd ${projectPath} && claude --resume ${sessionId}`;
-      navigator.clipboard.writeText(command).then(() => {
+    async (sessionId: string, projectPath: string) => {
+      const command = buildResumeCommand(sessionId, projectPath);
+
+      try {
+        await navigator.clipboard.writeText(command);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-      });
+      } catch {
+        // Clipboard API can fail when not served from a secure origin.
+      }
     },
     [],
   );

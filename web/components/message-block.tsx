@@ -388,7 +388,7 @@ function ToolResultRenderer(props: ToolResultRendererProps) {
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="mt-1 text-[11px] text-cyan-400 hover:text-cyan-300"
+          className="mt-1 text-[11px] text-cyan-400 hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 rounded-sm"
         >
           {expanded ? "Show less" : "Show all"}
         </button>
@@ -423,7 +423,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
       <div className={expanded ? "w-full" : ""}>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/15 text-[11px] text-amber-400/90 transition-colors border border-amber-500/20"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/15 text-[11px] text-amber-400/90 transition-colors border border-amber-500/20 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
         >
           <Lightbulb size={12} className="opacity-70" />
           <span className="font-medium">thinking</span>
@@ -466,7 +466,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
       <div className={isExpanded ? "w-full" : ""}>
         <button
           onClick={() => hasInput && !shouldAutoExpand && setExpanded(!expanded)}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-500/10 hover:bg-slate-500/15 text-[11px] text-slate-300 transition-colors border border-slate-500/20"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-500/10 hover:bg-slate-500/15 text-[11px] text-slate-300 transition-colors border border-slate-500/20 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
         >
           <Icon size={12} className="opacity-60" />
           <span className="font-medium text-slate-200">{block.name}</span>
@@ -515,7 +515,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
       <div className={expanded ? "w-full" : ""}>
         <button
           onClick={() => hasContent && setExpanded(!expanded)}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] transition-colors border ${
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] transition-colors border focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
             isError
               ? "bg-rose-500/10 hover:bg-rose-500/15 text-rose-400/90 border-rose-500/20"
               : "bg-teal-500/10 hover:bg-teal-500/15 text-teal-400/90 border-teal-500/20"

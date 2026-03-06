@@ -132,7 +132,7 @@ export function BashResultRenderer(props: BashResultRendererProps) {
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
-              className="text-[11px] text-cyan-400 hover:text-cyan-300"
+              className="text-[11px] text-cyan-400 hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 rounded-sm"
             >
               {expanded ? "Show less" : "Show all output"}
             </button>

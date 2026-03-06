@@ -269,8 +269,10 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
 
   return (
     <div
-      className="h-full overflow-hidden bg-zinc-950 flex flex-col"
+      className="h-full overflow-hidden bg-zinc-950 flex flex-col focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-inset"
       onKeyDown={handleListKeyDown}
+      tabIndex={0}
+      aria-label="Session list. Use arrow keys to move between sessions."
     >
       <div className="px-3 py-2 border-b border-zinc-800/60">
         <div className="flex items-center gap-2 text-zinc-500">
@@ -329,7 +331,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                 key={option.value}
                 type="button"
                 onClick={() => setRecencyFilter(option.value)}
-                className={`px-2 py-1 text-[11px] transition-colors ${
+                className={`px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-inset ${
                   recencyFilter === option.value
                     ? "bg-cyan-600/35 text-cyan-50"
                     : "bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800"
@@ -346,7 +348,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
             <select
               value={sortMode}
               onChange={(event) => setSortMode(event.target.value as SortMode)}
-              className="rounded-md border border-zinc-700/70 bg-zinc-900/80 px-1.5 py-1 text-[11px] text-zinc-200"
+              className="rounded-md border border-zinc-700/70 bg-zinc-900/80 px-1.5 py-1 text-[11px] text-zinc-200 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
               aria-label="Sort sessions"
             >
               {SORT_OPTIONS.map((option) => (

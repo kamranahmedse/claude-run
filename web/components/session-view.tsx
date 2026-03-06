@@ -271,10 +271,25 @@ function SessionView(props: SessionViewProps) {
                     navigateToMatch(event.shiftKey ? -1 : 1);
                   }
                 }}
-                className="flex-1 rounded-md border border-zinc-700/70 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-100 placeholder-zinc-500"
+                className="flex-1 rounded-md border border-zinc-700/70 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                 placeholder="Find in conversation..."
                 aria-label="Find in conversation"
               />
+
+              {findQuery.trim() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFindQuery("");
+                    setActiveMatchIndex(0);
+                    setAutoScroll(true);
+                  }}
+                  className="rounded-md border border-zinc-700/70 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-300 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                  aria-label="Clear find query"
+                >
+                  Clear
+                </button>
+              )}
 
               <span className="text-[11px] text-zinc-500 min-w-[62px] text-right">
                 {matchingMessageIndexes.length > 0
@@ -286,7 +301,7 @@ function SessionView(props: SessionViewProps) {
                 type="button"
                 onClick={() => navigateToMatch(-1)}
                 disabled={matchingMessageIndexes.length === 0}
-                className="rounded-md border border-zinc-700/70 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-300 enabled:hover:bg-zinc-800 disabled:opacity-40"
+                className="rounded-md border border-zinc-700/70 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-300 enabled:hover:bg-zinc-800 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                 aria-label="Previous match"
               >
                 Prev
@@ -296,7 +311,7 @@ function SessionView(props: SessionViewProps) {
                 type="button"
                 onClick={() => navigateToMatch(1)}
                 disabled={matchingMessageIndexes.length === 0}
-                className="rounded-md border border-zinc-700/70 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-300 enabled:hover:bg-zinc-800 disabled:opacity-40"
+                className="rounded-md border border-zinc-700/70 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-300 enabled:hover:bg-zinc-800 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                 aria-label="Next match"
               >
                 Next

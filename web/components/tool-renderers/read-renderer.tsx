@@ -142,7 +142,7 @@ export function FileContentRenderer(props: FileContentRendererProps) {
               <button
                 type="button"
                 onClick={() => setExpanded((prev) => !prev)}
-                className="ml-2 text-[11px] text-cyan-400 hover:text-cyan-300"
+                className="ml-2 text-[11px] text-cyan-400 hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 rounded-sm"
               >
                 {expanded ? "Show less" : "Show all"}
               </button>
