@@ -489,9 +489,9 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
           )}
         </div>
 
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <div
-            className="inline-flex rounded-md border border-zinc-700/70 overflow-hidden"
+            className="inline-flex shrink-0 rounded-md border border-zinc-700/70 overflow-hidden"
             role="group"
             aria-label="Session recency filter"
           >
@@ -500,7 +500,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                 key={option.value}
                 type="button"
                 onClick={() => setRecencyFilter(option.value)}
-                className={`px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-inset ${
+                className={`shrink-0 whitespace-nowrap px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-inset ${
                   recencyFilter === option.value
                     ? "bg-cyan-600/35 text-cyan-50"
                     : "bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800"
@@ -515,7 +515,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
           <button
             type="button"
             onClick={() => setShowPinnedOnly((previous) => !previous)}
-            className={`rounded-md border px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
+            className={`shrink-0 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
               showPinnedOnly
                 ? "border-cyan-500/70 bg-cyan-600/35 text-cyan-50"
                 : "border-zinc-700/70 bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800"
@@ -527,7 +527,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
             Pinned
           </button>
 
-          <label className="ml-auto flex items-center gap-1 text-[11px] text-zinc-500">
+          <label className="ml-auto flex min-w-0 items-center gap-1 text-[11px] text-zinc-500">
             <span>Sort</span>
             <select
               value={sortMode}
