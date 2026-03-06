@@ -1,7 +1,7 @@
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { Session } from "@claude-run/api";
-import { formatTime } from "../utils";
+import { formatTime, getStoredString, setStoredString } from "../utils";
 
 type RecencyFilter = "all" | "today" | "week";
 type SortMode =
@@ -43,6 +43,8 @@ const SORT_OPTIONS: Array<{ value: SortMode; label: string }> = [
   { value: "started-newest", label: "Started (Newest)" },
   { value: "started-oldest", label: "Started (Oldest)" },
 ];
+
+const PINNED_SESSIONS_KEY = "claude-run.pinned-session-ids";
 
 function startOfDay(input: Date): Date {
   const date = new Date(input);
@@ -118,14 +120,92 @@ function getSessionSortTimestamp(session: Session, sortMode: SortMode): number {
   return session.timestamp;
 }
 
+function parsePinnedSessionIds(rawValue: string | null): string[] {
+  if (!rawValue) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function loadPinnedSessionIds(): Set<string> {
+  const parsed = parsePinnedSessionIds(getStoredString(PINNED_SESSIONS_KEY));
+  return new Set(parsed);
+}
+
+function persistPinnedSessionIds(pinnedSessionIds: Set<string>): void {
+  if (pinnedSessionIds.size === 0) {
+    setStoredString(PINNED_SESSIONS_KEY, null);
+    return;
+  }
+
+  setStoredString(PINNED_SESSIONS_KEY, JSON.stringify([...pinnedSessionIds]));
+}
+
 const SessionList = memo(function SessionList(props: SessionListProps) {
   const { sessions, selectedSession, onSelectSession, loading } = props;
   const [search, setSearch] = useState("");
   const [recencyFilter, setRecencyFilter] = useState<RecencyFilter>("all");
   const [sortMode, setSortMode] = useState<SortMode>("updated-newest");
+  const [pinnedSessionIds, setPinnedSessionIds] = useState<Set<string>>(() =>
+    loadPinnedSessionIds(),
+  );
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const filteredSessions = useMemo(() => {
+  useEffect(() => {
+    setPinnedSessionIds((previous) => {
+      if (previous.size === 0) {
+        return previous;
+      }
+
+      const availableIds = new Set(sessions.map((session) => session.id));
+      const next = new Set<string>();
+      let changed = false;
+
+      for (const sessionId of previous) {
+        if (availableIds.has(sessionId)) {
+          next.add(sessionId);
+        } else {
+          changed = true;
+        }
+      }
+
+      if (!changed) {
+        return previous;
+      }
+
+      persistPinnedSessionIds(next);
+      return next;
+    });
+  }, [sessions]);
+
+  const togglePinnedSession = useCallback((sessionId: string) => {
+    setPinnedSessionIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(sessionId)) {
+        next.delete(sessionId);
+      } else {
+        next.add(sessionId);
+      }
+
+      persistPinnedSessionIds(next);
+      return next;
+    });
+  }, []);
+
+  const filteredSessionGroups = useMemo(() => {
     const query = search.trim().toLowerCase();
     const now = new Date();
     const todayStart = startOfDay(now);
@@ -170,8 +250,27 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
       return bTimestamp - aTimestamp;
     });
 
-    return sorted;
-  }, [sessions, search, recencyFilter, sortMode]);
+    const pinned: Session[] = [];
+    const unpinned: Session[] = [];
+
+    for (const session of sorted) {
+      if (pinnedSessionIds.has(session.id)) {
+        pinned.push(session);
+      } else {
+        unpinned.push(session);
+      }
+    }
+
+    return {
+      ordered: [...pinned, ...unpinned],
+      pinned,
+      unpinned,
+    };
+  }, [sessions, search, recencyFilter, sortMode, pinnedSessionIds]);
+
+  const orderedSessions = filteredSessionGroups.ordered;
+  const pinnedSessions = filteredSessionGroups.pinned;
+  const unpinnedSessions = filteredSessionGroups.unpinned;
 
   const rows = useMemo<ListRow[]>(() => {
     const list: ListRow[] = [];
@@ -179,7 +278,23 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
     let lastGroupLabel = "";
     const now = new Date();
 
-    for (const session of filteredSessions) {
+    if (pinnedSessions.length > 0) {
+      list.push({
+        type: "group",
+        id: "group-pinned",
+        label: "Pinned",
+      });
+    }
+
+    for (const session of pinnedSessions) {
+      list.push({
+        type: "session",
+        id: session.id,
+        session,
+      });
+    }
+
+    for (const session of unpinnedSessions) {
       const label = getRecencyLabel(getSessionSortTimestamp(session, sortMode), now);
       if (label !== lastGroupLabel) {
         list.push({
@@ -199,7 +314,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
     }
 
     return list;
-  }, [filteredSessions, sortMode]);
+  }, [pinnedSessions, unpinnedSessions, sortMode]);
 
   const rowIndexBySessionId = useMemo(() => {
     const indexMap = new Map<string, number>();
@@ -221,8 +336,8 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
 
   const moveSelection = useCallback(
     (targetIndex: number) => {
-      const boundedIndex = Math.max(0, Math.min(targetIndex, filteredSessions.length - 1));
-      const targetSession = filteredSessions[boundedIndex];
+      const boundedIndex = Math.max(0, Math.min(targetIndex, orderedSessions.length - 1));
+      const targetSession = orderedSessions[boundedIndex];
       if (!targetSession) {
         return;
       }
@@ -233,7 +348,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
         virtualizer.scrollToIndex(rowIndex, { align: "center" });
       }
     },
-    [filteredSessions, onSelectSession, rowIndexBySessionId, virtualizer],
+    [orderedSessions, onSelectSession, rowIndexBySessionId, virtualizer],
   );
 
   const handleListKeyDown = useCallback(
@@ -242,17 +357,18 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
       if (
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
-        target instanceof HTMLSelectElement
+        target instanceof HTMLSelectElement ||
+        target instanceof HTMLButtonElement
       ) {
         return;
       }
 
-      if (filteredSessions.length === 0) {
+      if (orderedSessions.length === 0) {
         return;
       }
 
       const selectedIndex = selectedSession
-        ? filteredSessions.findIndex((session) => session.id === selectedSession)
+        ? orderedSessions.findIndex((session) => session.id === selectedSession)
         : -1;
 
       if (event.key === "ArrowDown") {
@@ -264,7 +380,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
       if (event.key === "ArrowUp") {
         event.preventDefault();
         if (selectedIndex <= 0) {
-          moveSelection(filteredSessions.length - 1);
+          moveSelection(orderedSessions.length - 1);
           return;
         }
         moveSelection(selectedIndex - 1);
@@ -276,7 +392,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
         moveSelection(selectedIndex);
       }
     },
-    [filteredSessions, selectedSession, moveSelection],
+    [orderedSessions, selectedSession, moveSelection],
   );
 
   const emptyMessage = useMemo(() => {
@@ -451,13 +567,13 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
               const session = row.session;
               const sortTimestamp = getSessionSortTimestamp(session, sortMode);
               const sortLabel = isUpdatedSort(sortMode) ? "Last updated" : "Started";
+              const isPinned = pinnedSessionIds.has(session.id);
 
               return (
-                <button
+                <div
                   key={session.id}
                   data-index={virtualItem.index}
                   ref={virtualizer.measureElement}
-                  onClick={() => onSelectSession(session.id)}
                   style={{
                     position: "absolute",
                     top: 0,
@@ -465,28 +581,60 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                     width: "100%",
                     transform: `translateY(${virtualItem.start}px)`,
                   }}
-                  className={`px-3 py-3.5 text-left transition-colors overflow-hidden border-b border-zinc-800/40 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-inset ${
+                  className={`relative border-b border-zinc-800/40 transition-colors ${
                     selectedSession === session.id
                       ? "bg-cyan-700/30 text-zinc-50"
                       : "hover:bg-zinc-900/60"
                   }`}
-                  aria-current={selectedSession === session.id ? "true" : undefined}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-zinc-400 font-medium">
-                      {highlightMatches(session.projectName, search)}
-                    </span>
-                    <span
-                      className="text-[10px] text-zinc-500"
-                      title={`${sortLabel}: ${new Date(sortTimestamp).toLocaleString()}`}
+                  <button
+                    type="button"
+                    onClick={() => onSelectSession(session.id)}
+                    className="w-full px-3 py-3.5 pr-10 text-left overflow-hidden focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-inset"
+                    aria-current={selectedSession === session.id ? "true" : undefined}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        {highlightMatches(session.projectName, search)}
+                      </span>
+                      <span
+                        className="text-[10px] text-zinc-500"
+                        title={`${sortLabel}: ${new Date(sortTimestamp).toLocaleString()}`}
+                      >
+                        {formatTime(sortTimestamp)}
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-zinc-200 leading-snug line-clamp-2 break-words">
+                      {highlightMatches(session.display, search)}
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => togglePinnedSession(session.id)}
+                    className={`absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
+                      isPinned
+                        ? "text-amber-300 hover:text-amber-200"
+                        : "text-zinc-600 hover:text-zinc-300"
+                    }`}
+                    aria-label={isPinned ? "Unpin session" : "Pin session"}
+                    aria-pressed={isPinned}
+                    title={isPinned ? "Unpin session" : "Pin session"}
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      fill={isPinned ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     >
-                      {formatTime(sortTimestamp)}
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-zinc-200 leading-snug line-clamp-2 break-words">
-                    {highlightMatches(session.display, search)}
-                  </p>
-                </button>
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -495,8 +643,9 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
 
       <div className="px-3 py-2 border-t border-zinc-800/60">
         <div className="text-[10px] text-zinc-500 text-center">
-          {filteredSessions.length} shown / {sessions.length} session
+          {orderedSessions.length} shown / {sessions.length} session
           {sessions.length !== 1 ? "s" : ""}
+          {pinnedSessions.length > 0 ? ` • ${pinnedSessions.length} pinned` : ""}
         </div>
         <div className="mt-1 text-[10px] text-zinc-600 text-center">
           Keyboard: ↑ ↓ to move, Enter to open
