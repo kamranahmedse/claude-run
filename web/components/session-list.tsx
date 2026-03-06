@@ -524,7 +524,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
             aria-label="Toggle pinned-only sessions"
             title="Show only pinned sessions"
           >
-            Pinned only
+            Pinned
           </button>
 
           <label className="ml-auto flex items-center gap-1 text-[11px] text-zinc-500">
