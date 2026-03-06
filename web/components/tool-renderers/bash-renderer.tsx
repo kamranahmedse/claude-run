@@ -68,6 +68,7 @@ export function BashRenderer(props: BashRendererProps) {
 
 export function BashResultRenderer(props: BashResultRendererProps) {
   const { content, isError } = props;
+  const [expanded, setExpanded] = useState(false);
 
   if (!content || content.trim().length === 0) {
     return (
@@ -83,7 +84,7 @@ export function BashResultRenderer(props: BashResultRendererProps) {
   const lines = content.split("\n");
   const maxLines = 30;
   const truncated = lines.length > maxLines;
-  const displayLines = truncated ? lines.slice(0, maxLines) : lines;
+  const displayLines = !truncated || expanded ? lines : lines.slice(0, maxLines);
 
   return (
     <div className="w-full mt-2">
@@ -119,13 +120,24 @@ export function BashResultRenderer(props: BashResultRendererProps) {
             }`}
           >
             {displayLines.join("\n")}
-            {truncated && (
+            {!expanded && truncated && (
               <div className="text-zinc-500 mt-2 pt-2 border-t border-zinc-700/50">
                 ... {lines.length - maxLines} more lines
               </div>
             )}
           </pre>
         </div>
+        {truncated && (
+          <div className="px-3 py-2 border-t border-zinc-700/50">
+            <button
+              type="button"
+              onClick={() => setExpanded((prev) => !prev)}
+              className="text-[11px] text-cyan-400 hover:text-cyan-300"
+            >
+              {expanded ? "Show less" : "Show all output"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
