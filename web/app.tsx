@@ -301,7 +301,7 @@ function App() {
         sessionMap.set(update.id, update);
       }
       return Array.from(sessionMap.values()).sort(
-        (a, b) => b.timestamp - a.timestamp,
+        (a, b) => b.lastUpdatedAt - a.lastUpdatedAt,
       );
     });
     setConnectionStatus("live");

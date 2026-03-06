@@ -14,6 +14,7 @@ export interface Session {
   id: string;
   display: string;
   timestamp: number;
+  lastUpdatedAt: number;
   project: string;
   projectName: string;
 }
@@ -323,12 +324,37 @@ export async function getSessions(): Promise<Session[]> {
         id: sessionId,
         display: entry.display,
         timestamp: entry.timestamp,
+        lastUpdatedAt: entry.timestamp,
         project: entry.project,
         projectName: getProjectName(entry.project),
       });
     }
 
-    return sessions.sort((a, b) => b.timestamp - a.timestamp);
+    const sessionsWithActivity = await Promise.all(
+      sessions.map(async (session) => {
+        const filePath = await findSessionFile(session.id);
+        if (!filePath) {
+          return session;
+        }
+
+        try {
+          const fileStat = await stat(filePath);
+          return {
+            ...session,
+            lastUpdatedAt: Math.max(session.timestamp, fileStat.mtimeMs),
+          };
+        } catch {
+          return session;
+        }
+      }),
+    );
+
+    return sessionsWithActivity.sort((a, b) => {
+      if (b.lastUpdatedAt !== a.lastUpdatedAt) {
+        return b.lastUpdatedAt - a.lastUpdatedAt;
+      }
+      return b.timestamp - a.timestamp;
+    });
   });
 }
 
