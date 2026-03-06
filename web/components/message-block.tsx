@@ -40,6 +40,35 @@ interface MessageBlockProps {
   message: ConversationMessage;
 }
 
+function formatMessageTimestamp(timestamp: string | undefined): string | null {
+  if (!timestamp) {
+    return null;
+  }
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatTokenUsage(message: ConversationMessage): string | null {
+  const usage = message.message?.usage;
+  if (!usage) {
+    return null;
+  }
+
+  const input = usage.input_tokens || 0;
+  const output = usage.output_tokens || 0;
+  const total = input + output;
+  if (total <= 0) {
+    return null;
+  }
+
+  return `${input} in / ${output} out`;
+}
+
 function buildToolMap(content: ContentBlock[]): Map<string, string> {
   const toolMap = new Map<string, string>();
   for (const block of content) {
@@ -92,6 +121,11 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
   const hasTools = toolBlocks.length > 0;
 
   const toolMap = Array.isArray(content) ? buildToolMap(content) : new Map<string, string>();
+  const metadataParts = [
+    formatMessageTimestamp(message.timestamp),
+    message.message?.model || null,
+    formatTokenUsage(message),
+  ].filter(Boolean) as string[];
 
   if (!hasText && hasTools) {
     return (
@@ -110,6 +144,16 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} min-w-0`}>
       <div className="max-w-[85%] min-w-0">
+        {metadataParts.length > 0 && (
+          <div
+            className={`mb-1 px-1 text-[10px] ${
+              isUser ? "text-right text-indigo-200/60" : "text-zinc-500"
+            }`}
+          >
+            {metadataParts.join(" • ")}
+          </div>
+        )}
+
         <div
           className={`px-3.5 py-2.5 rounded-2xl overflow-hidden ${
             isUser
@@ -294,6 +338,7 @@ interface ToolResultRendererProps {
 
 function ToolResultRenderer(props: ToolResultRendererProps) {
   const { toolName, content, isError } = props;
+  const [expanded, setExpanded] = useState(false);
   const name = toolName.toLowerCase();
 
   if (name === "bash") {
@@ -323,25 +368,40 @@ function ToolResultRenderer(props: ToolResultRendererProps) {
 
   const maxLength = 2000;
   const truncated = content.length > maxLength;
-  const displayContent = truncated ? content.slice(0, maxLength) : content;
+  const displayContent = !truncated || expanded ? content : content.slice(0, maxLength);
 
   return (
-    <pre
-      className={`text-xs rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto border ${
-        isError
-          ? "bg-rose-950/30 text-rose-200/80 border-rose-900/30"
-          : "bg-teal-950/30 text-teal-200/80 border-teal-900/30"
-      }`}
-    >
-      {displayContent}
-      {truncated && <span className="text-zinc-500">... ({content.length - maxLength} more chars)</span>}
-    </pre>
+    <div className="mt-2">
+      <pre
+        className={`text-xs rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto border ${
+          isError
+            ? "bg-rose-950/30 text-rose-200/80 border-rose-900/30"
+            : "bg-teal-950/30 text-teal-200/80 border-teal-900/30"
+        }`}
+      >
+        {displayContent}
+        {!expanded && truncated && (
+          <span className="text-zinc-500">... ({content.length - maxLength} more chars)</span>
+        )}
+      </pre>
+      {truncated && (
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="mt-1 text-[11px] text-cyan-400 hover:text-cyan-300"
+        >
+          {expanded ? "Show less" : "Show all"}
+        </button>
+      )}
+    </div>
   );
 }
 
 function ContentBlockRenderer(props: ContentBlockRendererProps) {
   const { block, isUser, toolMap } = props;
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(
+    block.type === "tool_result" && Boolean(block.is_error),
+  );
 
   if (block.type === "text" && block.text) {
     const sanitized = sanitizeText(block.text);
