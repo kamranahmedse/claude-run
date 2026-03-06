@@ -8,12 +8,21 @@ interface EventHandler {
 interface UseEventSourceOptions {
   events: EventHandler[];
   onError?: () => void;
+  onOpen?: () => void;
+  onRetry?: (attempt: number, delayMs: number) => void;
   maxRetries?: number;
   baseDelay?: number;
 }
 
 export function useEventSource(url: string, options: UseEventSourceOptions) {
-  const { events, onError, maxRetries = 10, baseDelay = 1000 } = options;
+  const {
+    events,
+    onError,
+    onOpen,
+    onRetry,
+    maxRetries = 10,
+    baseDelay = 1000,
+  } = options;
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryCountRef = useRef(0);
@@ -27,12 +36,22 @@ export function useEventSource(url: string, options: UseEventSourceOptions) {
       return;
     }
 
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
 
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
+
+    eventSource.onopen = () => {
+      retryCountRef.current = 0;
+      onOpen?.();
+    };
 
     for (const handler of eventsRef.current) {
       eventSource.addEventListener(handler.eventName, (event) => {
@@ -53,7 +72,8 @@ export function useEventSource(url: string, options: UseEventSourceOptions) {
           baseDelay * Math.pow(2, retryCountRef.current),
           30000
         );
-        retryCountRef.current++;
+        retryCountRef.current += 1;
+        onRetry?.(retryCountRef.current, delay);
 
         retryTimeoutRef.current = setTimeout(() => {
           connect();
@@ -62,7 +82,7 @@ export function useEventSource(url: string, options: UseEventSourceOptions) {
         onError?.();
       }
     };
-  }, [url, onError, maxRetries, baseDelay]);
+  }, [url, onError, onOpen, onRetry, maxRetries, baseDelay]);
 
   useEffect(() => {
     mountedRef.current = true;

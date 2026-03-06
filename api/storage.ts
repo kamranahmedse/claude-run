@@ -14,6 +14,7 @@ export interface Session {
   id: string;
   display: string;
   timestamp: number;
+  lastUpdatedAt: number;
   project: string;
   projectName: string;
 }
@@ -80,12 +81,43 @@ export function addToFileIndex(sessionId: string, filePath: string): void {
   fileIndex.set(sessionId, filePath);
 }
 
-function encodeProjectPath(path: string): string {
-  return path.replace(/[/.]/g, "-");
+function normalizeProjectPath(projectPath: string): string {
+  return projectPath.replace(/\\/g, "/").replace(/\/+/g, "/").trim();
+}
+
+function addPathVariant(variants: Set<string>, value: string): void {
+  if (!value || /[\\/:]/.test(value)) {
+    return;
+  }
+
+  variants.add(value);
+
+  const collapsedDashes = value.replace(/-+/g, "-");
+  if (collapsedDashes) {
+    variants.add(collapsedDashes);
+  }
+
+  const trimmedDashes = collapsedDashes.replace(/^-+|-+$/g, "");
+  if (trimmedDashes) {
+    variants.add(trimmedDashes);
+  }
+}
+
+function getProjectDirectoryCandidates(projectPath: string): string[] {
+  const normalized = normalizeProjectPath(projectPath);
+  const variants = new Set<string>();
+
+  addPathVariant(variants, normalized.replace(/[/.]/g, "-"));
+  addPathVariant(variants, normalized.replace(/[\\/.:]/g, "-"));
+  addPathVariant(variants, normalized.replace(/[^a-zA-Z0-9_-]/g, "-"));
+  addPathVariant(variants, normalized.replace(/[\\/]/g, "-"));
+
+  return [...variants].filter(Boolean);
 }
 
 function getProjectName(projectPath: string): string {
-  const parts = projectPath.split("/").filter(Boolean);
+  const normalized = normalizeProjectPath(projectPath).replace(/\/+$/, "");
+  const parts = normalized.split("/").filter(Boolean);
   return parts[parts.length - 1] || projectPath;
 }
 
@@ -152,12 +184,21 @@ async function dedupe<T>(key: string, fn: () => Promise<T>): Promise<T> {
   return promise;
 }
 
-async function findSessionByTimestamp(
-  encodedProject: string,
+async function getProjectDirectorySet(): Promise<Set<string>> {
+  try {
+    const projectDirs = await readdir(projectsDir, { withFileTypes: true });
+    return new Set(projectDirs.filter((d) => d.isDirectory()).map((d) => d.name));
+  } catch {
+    return new Set<string>();
+  }
+}
+
+async function findSessionByTimestampInDirectory(
+  projectDirectory: string,
   timestamp: number
 ): Promise<string | undefined> {
   try {
-    const projectPath = join(projectsDir, encodedProject);
+    const projectPath = join(projectsDir, projectDirectory);
     const files = await readdir(projectPath);
     const jsonlFiles = files.filter((f) => f.endsWith(".jsonl"));
 
@@ -185,6 +226,31 @@ async function findSessionByTimestamp(
     }
   } catch {
     // Project directory doesn't exist
+  }
+
+  return undefined;
+}
+
+async function findSessionByTimestamp(
+  projectPath: string,
+  timestamp: number,
+  projectDirectories: Set<string>
+): Promise<string | undefined> {
+  const candidates = getProjectDirectoryCandidates(projectPath);
+  const matchingCandidates = candidates.filter((candidate) =>
+    projectDirectories.has(candidate)
+  );
+  if (projectDirectories.size > 0 && matchingCandidates.length === 0) {
+    return undefined;
+  }
+
+  const prioritized = matchingCandidates.length > 0 ? matchingCandidates : candidates;
+
+  for (const candidate of prioritized) {
+    const sessionId = await findSessionByTimestampInDirectory(candidate, timestamp);
+    if (sessionId) {
+      return sessionId;
+    }
   }
 
   return undefined;
@@ -235,14 +301,18 @@ export async function loadStorage(): Promise<void> {
 export async function getSessions(): Promise<Session[]> {
   return dedupe("getSessions", async () => {
     const entries = historyCache ?? (await loadHistoryCache());
+    const projectDirectories = await getProjectDirectorySet();
     const sessions: Session[] = [];
     const seenIds = new Set<string>();
 
     for (const entry of entries) {
       let sessionId = entry.sessionId;
       if (!sessionId) {
-        const encodedProject = encodeProjectPath(entry.project);
-        sessionId = await findSessionByTimestamp(encodedProject, entry.timestamp);
+        sessionId = await findSessionByTimestamp(
+          entry.project,
+          entry.timestamp,
+          projectDirectories
+        );
       }
 
       if (!sessionId || seenIds.has(sessionId)) {
@@ -254,12 +324,37 @@ export async function getSessions(): Promise<Session[]> {
         id: sessionId,
         display: entry.display,
         timestamp: entry.timestamp,
+        lastUpdatedAt: entry.timestamp,
         project: entry.project,
         projectName: getProjectName(entry.project),
       });
     }
 
-    return sessions.sort((a, b) => b.timestamp - a.timestamp);
+    const sessionsWithActivity = await Promise.all(
+      sessions.map(async (session) => {
+        const filePath = await findSessionFile(session.id);
+        if (!filePath) {
+          return session;
+        }
+
+        try {
+          const fileStat = await stat(filePath);
+          return {
+            ...session,
+            lastUpdatedAt: Math.max(session.timestamp, fileStat.mtimeMs),
+          };
+        } catch {
+          return session;
+        }
+      }),
+    );
+
+    return sessionsWithActivity.sort((a, b) => {
+      if (b.lastUpdatedAt !== a.lastUpdatedAt) {
+        return b.lastUpdatedAt - a.lastUpdatedAt;
+      }
+      return b.timestamp - a.timestamp;
+    });
   });
 }
 

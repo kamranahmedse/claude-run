@@ -1,6 +1,33 @@
 @import "tailwindcss";
 
 @font-face {
+  font-family: "Geist";
+  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Regular.woff2")
+    format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Medium.woff2")
+    format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-SemiBold.woff2")
+    format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "Geist Mono";
   src: url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-mono/GeistMono-Regular.woff2")
     format("woff2");
@@ -29,12 +56,37 @@
 
 :root {
   color-scheme: dark;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Helvetica, Arial, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, monospace;
+  --focus-ring: #22d3ee;
+}
+
+:root[data-density="comfortable"] {
+  font-size: 16px;
+}
+
+:root[data-density="compact"] {
+  font-size: 15px;
 }
 
 body {
-  font-family: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
-    Consolas, monospace;
+  font-family: var(--font-sans);
   background: #09090b;
+  color: #f4f4f5;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+#root {
+  height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  #root {
+    height: 100dvh;
+  }
 }
 
 * {
@@ -65,15 +117,29 @@ pre {
   border-radius: 8px;
   padding: 12px;
   overflow-x: auto;
+  font-family: var(--font-mono);
 }
 
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-mono);
   font-size: 0.875rem;
 }
 
 select option {
   background: #18181b;
   color: #e4e4e7;
+}
+
+button,
+input,
+select,
+a {
+  outline: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }

@@ -1,5 +1,6 @@
 import { FileText, FileCode } from "lucide-react";
 import { CopyButton } from "./copy-button";
+import { useState } from "react";
 
 interface ReadInput {
   file_path: string;
@@ -93,6 +94,7 @@ export function ReadRenderer(props: ReadRendererProps) {
 
 export function FileContentRenderer(props: FileContentRendererProps) {
   const { content, fileName } = props;
+  const [expanded, setExpanded] = useState(false);
 
   if (!content) {
     return null;
@@ -101,7 +103,7 @@ export function FileContentRenderer(props: FileContentRendererProps) {
   const lines = content.split("\n");
   const maxLines = 50;
   const truncated = lines.length > maxLines;
-  const displayLines = truncated ? lines.slice(0, maxLines) : lines;
+  const displayLines = !truncated || expanded ? lines : lines.slice(0, maxLines);
 
   const ext = fileName ? getFileExtension(fileName) : "";
   const language = ext ? getLanguageFromExt(ext) : null;
@@ -136,7 +138,14 @@ export function FileContentRenderer(props: FileContentRendererProps) {
           </table>
           {truncated && (
             <div className="px-3 py-2 text-xs text-zinc-500 border-t border-zinc-700/50">
-              ... {lines.length - maxLines} more lines
+              {!expanded ? `... ${lines.length - maxLines} more lines` : "Showing full file output"}
+              <button
+                type="button"
+                onClick={() => setExpanded((prev) => !prev)}
+                className="ml-2 text-[11px] text-cyan-400 hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 rounded-sm"
+              >
+                {expanded ? "Show less" : "Show all"}
+              </button>
             </div>
           )}
         </div>
