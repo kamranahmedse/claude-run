@@ -57,12 +57,14 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="flex-1 bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
+            aria-label="Search sessions"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="text-zinc-600 hover:text-zinc-400 transition-colors"
+              className="text-zinc-500 hover:text-zinc-300 transition-colors rounded-sm focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+              aria-label="Clear session search"
             >
               <svg
                 className="w-4 h-4"
@@ -132,21 +134,25 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                     width: "100%",
                     transform: `translateY(${virtualItem.start}px)`,
                   }}
-                  className={`px-3 py-3.5 text-left transition-colors overflow-hidden border-b border-zinc-800/40 ${
+                  className={`px-3 py-3.5 text-left transition-colors overflow-hidden border-b border-zinc-800/40 focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-inset ${
                     selectedSession === session.id
-                      ? "bg-cyan-700/30"
+                      ? "bg-cyan-700/30 text-zinc-50"
                       : "hover:bg-zinc-900/60"
                   } ${virtualItem.index === 0 ? "border-t border-t-zinc-800/40" : ""}`}
+                  aria-current={selectedSession === session.id ? "true" : undefined}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-zinc-500 font-medium">
+                    <span className="text-[10px] text-zinc-400 font-medium">
                       {session.projectName}
                     </span>
-                    <span className="text-[10px] text-zinc-600">
+                    <span
+                      className="text-[10px] text-zinc-500"
+                      title={new Date(session.timestamp).toLocaleString()}
+                    >
                       {formatTime(session.timestamp)}
                     </span>
                   </div>
-                  <p className="text-[12px] text-zinc-300 leading-snug line-clamp-2 break-words">
+                  <p className="text-[12px] text-zinc-200 leading-snug line-clamp-2 break-words">
                     {session.display}
                   </p>
                 </button>
