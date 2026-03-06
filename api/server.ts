@@ -84,41 +84,55 @@ export function createServer(options: ServerOptions) {
       const cleanup = () => {
         isConnected = false;
         offHistoryChange(handleHistoryChange);
+        offSessionChange(handleSessionChange);
       };
 
-      const handleHistoryChange = async () => {
+      const publishSessionUpdates = async () => {
         if (!isConnected) {
           return;
         }
-        try {
-          const sessions = await getSessions();
-          const newOrUpdated = sessions.filter((s) => {
-            const known = knownSessions.get(s.id);
-            return known === undefined || known !== s.timestamp;
+        const sessions = await getSessions();
+        const newOrUpdated = sessions.filter((s) => {
+          const known = knownSessions.get(s.id);
+          return known === undefined || known !== s.lastUpdatedAt;
+        });
+
+        for (const s of sessions) {
+          knownSessions.set(s.id, s.lastUpdatedAt);
+        }
+
+        if (newOrUpdated.length > 0) {
+          await stream.writeSSE({
+            event: "sessionsUpdate",
+            data: JSON.stringify(newOrUpdated),
           });
+        }
+      };
 
-          for (const s of sessions) {
-            knownSessions.set(s.id, s.timestamp);
-          }
+      const handleHistoryChange = async () => {
+        try {
+          await publishSessionUpdates();
+        } catch {
+          cleanup();
+        }
+      };
 
-          if (newOrUpdated.length > 0) {
-            await stream.writeSSE({
-              event: "sessionsUpdate",
-              data: JSON.stringify(newOrUpdated),
-            });
-          }
+      const handleSessionChange = async () => {
+        try {
+          await publishSessionUpdates();
         } catch {
           cleanup();
         }
       };
 
       onHistoryChange(handleHistoryChange);
+      onSessionChange(handleSessionChange);
       c.req.raw.signal.addEventListener("abort", cleanup);
 
       try {
         const sessions = await getSessions();
         for (const s of sessions) {
-          knownSessions.set(s.id, s.timestamp);
+          knownSessions.set(s.id, s.lastUpdatedAt);
         }
 
         await stream.writeSSE({

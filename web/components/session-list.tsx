@@ -4,7 +4,11 @@ import type { Session } from "@claude-run/api";
 import { formatTime } from "../utils";
 
 type RecencyFilter = "all" | "today" | "week";
-type SortMode = "newest" | "oldest";
+type SortMode =
+  | "updated-newest"
+  | "updated-oldest"
+  | "started-newest"
+  | "started-oldest";
 
 type SessionRow = {
   type: "session";
@@ -34,8 +38,10 @@ const RECENCY_FILTER_OPTIONS: Array<{ value: RecencyFilter; label: string }> = [
 ];
 
 const SORT_OPTIONS: Array<{ value: SortMode; label: string }> = [
-  { value: "newest", label: "Newest" },
-  { value: "oldest", label: "Oldest" },
+  { value: "updated-newest", label: "Updated (Newest)" },
+  { value: "updated-oldest", label: "Updated (Oldest)" },
+  { value: "started-newest", label: "Started (Newest)" },
+  { value: "started-oldest", label: "Started (Oldest)" },
 ];
 
 function startOfDay(input: Date): Date {
@@ -97,11 +103,26 @@ function getRecencyLabel(timestamp: number, now: Date): string {
   return "Older";
 }
 
+function isUpdatedSort(sortMode: SortMode): boolean {
+  return sortMode.startsWith("updated");
+}
+
+function isOldestFirst(sortMode: SortMode): boolean {
+  return sortMode.endsWith("oldest");
+}
+
+function getSessionSortTimestamp(session: Session, sortMode: SortMode): number {
+  if (isUpdatedSort(sortMode)) {
+    return session.lastUpdatedAt;
+  }
+  return session.timestamp;
+}
+
 const SessionList = memo(function SessionList(props: SessionListProps) {
   const { sessions, selectedSession, onSelectSession, loading } = props;
   const [search, setSearch] = useState("");
   const [recencyFilter, setRecencyFilter] = useState<RecencyFilter>("all");
-  const [sortMode, setSortMode] = useState<SortMode>("newest");
+  const [sortMode, setSortMode] = useState<SortMode>("updated-newest");
   const parentRef = useRef<HTMLDivElement>(null);
 
   const filteredSessions = useMemo(() => {
@@ -116,7 +137,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
         return true;
       }
 
-      const value = new Date(session.timestamp);
+      const value = new Date(getSessionSortTimestamp(session, sortMode));
       if (recencyFilter === "today") {
         return value >= todayStart;
       }
@@ -136,10 +157,17 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
     });
 
     const sorted = [...searched].sort((a, b) => {
-      if (sortMode === "oldest") {
-        return a.timestamp - b.timestamp;
+      const aTimestamp = getSessionSortTimestamp(a, sortMode);
+      const bTimestamp = getSessionSortTimestamp(b, sortMode);
+
+      if (aTimestamp === bTimestamp) {
+        return b.timestamp - a.timestamp;
       }
-      return b.timestamp - a.timestamp;
+
+      if (isOldestFirst(sortMode)) {
+        return aTimestamp - bTimestamp;
+      }
+      return bTimestamp - aTimestamp;
     });
 
     return sorted;
@@ -152,7 +180,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
     const now = new Date();
 
     for (const session of filteredSessions) {
-      const label = getRecencyLabel(session.timestamp, now);
+      const label = getRecencyLabel(getSessionSortTimestamp(session, sortMode), now);
       if (label !== lastGroupLabel) {
         list.push({
           type: "group",
@@ -171,7 +199,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
     }
 
     return list;
-  }, [filteredSessions]);
+  }, [filteredSessions, sortMode]);
 
   const rowIndexBySessionId = useMemo(() => {
     const indexMap = new Map<string, number>();
@@ -421,6 +449,8 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
               }
 
               const session = row.session;
+              const sortTimestamp = getSessionSortTimestamp(session, sortMode);
+              const sortLabel = isUpdatedSort(sortMode) ? "Last updated" : "Started";
 
               return (
                 <button
@@ -448,9 +478,9 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                     </span>
                     <span
                       className="text-[10px] text-zinc-500"
-                      title={new Date(session.timestamp).toLocaleString()}
+                      title={`${sortLabel}: ${new Date(sortTimestamp).toLocaleString()}`}
                     >
-                      {formatTime(session.timestamp)}
+                      {formatTime(sortTimestamp)}
                     </span>
                   </div>
                   <p className="text-[12px] text-zinc-200 leading-snug line-clamp-2 break-words">
