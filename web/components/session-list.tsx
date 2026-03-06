@@ -158,6 +158,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
   const { sessions, selectedSession, onSelectSession, loading } = props;
   const [search, setSearch] = useState("");
   const [recencyFilter, setRecencyFilter] = useState<RecencyFilter>("all");
+  const [showPinnedOnly, setShowPinnedOnly] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("updated-newest");
   const [pinnedSessionIds, setPinnedSessionIds] = useState<Set<string>>(() =>
     loadPinnedSessionIds(),
@@ -250,10 +251,14 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
       return bTimestamp - aTimestamp;
     });
 
+    const visibleSessions = showPinnedOnly
+      ? sorted.filter((session) => pinnedSessionIds.has(session.id))
+      : sorted;
+
     const pinned: Session[] = [];
     const unpinned: Session[] = [];
 
-    for (const session of sorted) {
+    for (const session of visibleSessions) {
       if (pinnedSessionIds.has(session.id)) {
         pinned.push(session);
       } else {
@@ -266,7 +271,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
       pinned,
       unpinned,
     };
-  }, [sessions, search, recencyFilter, sortMode, pinnedSessionIds]);
+  }, [sessions, search, recencyFilter, sortMode, pinnedSessionIds, showPinnedOnly]);
 
   const orderedSessions = filteredSessionGroups.ordered;
   const pinnedSessions = filteredSessionGroups.pinned;
@@ -396,6 +401,26 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
   );
 
   const emptyMessage = useMemo(() => {
+    if (showPinnedOnly) {
+      if (search.trim()) {
+        return "No pinned sessions match the current search.";
+      }
+
+      if (recencyFilter === "today") {
+        return "No pinned sessions from today.";
+      }
+
+      if (recencyFilter === "week") {
+        return "No pinned sessions from this week.";
+      }
+
+      if (pinnedSessionIds.size === 0) {
+        return "No pinned sessions yet.";
+      }
+
+      return "No pinned sessions found.";
+    }
+
     if (search.trim()) {
       return "No sessions match the current search.";
     }
@@ -409,7 +434,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
     }
 
     return "No sessions found.";
-  }, [search, recencyFilter]);
+  }, [search, recencyFilter, showPinnedOnly, pinnedSessionIds]);
 
   return (
     <div
@@ -486,6 +511,21 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
               </button>
             ))}
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowPinnedOnly((previous) => !previous)}
+            className={`rounded-md border px-2 py-1 text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
+              showPinnedOnly
+                ? "border-cyan-500/70 bg-cyan-600/35 text-cyan-50"
+                : "border-zinc-700/70 bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800"
+            }`}
+            aria-pressed={showPinnedOnly}
+            aria-label="Toggle pinned-only sessions"
+            title="Show only pinned sessions"
+          >
+            Pinned only
+          </button>
 
           <label className="ml-auto flex items-center gap-1 text-[11px] text-zinc-500">
             <span>Sort</span>
