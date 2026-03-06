@@ -150,7 +150,8 @@ export function createServer(options: ServerOptions) {
   app.get("/api/conversation/:id/stream", async (c) => {
     const sessionId = c.req.param("id");
     const offsetParam = c.req.query("offset");
-    let offset = offsetParam ? parseInt(offsetParam, 10) : 0;
+    const parsedOffset = offsetParam ? parseInt(offsetParam, 10) : 0;
+    let offset = Number.isFinite(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
 
     return streamSSE(c, async (stream) => {
       let isConnected = true;
