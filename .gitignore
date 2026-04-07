@@ -33,3 +33,5 @@ npm-debug.log*
 package-lock.json
 yarn.lock
 bun.lockb
+.gstack/
+.github/.demo-frames/

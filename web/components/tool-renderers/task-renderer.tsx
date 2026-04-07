@@ -1,4 +1,7 @@
-import { Bot, Play, Pause, ArrowRight, RefreshCw } from "lucide-react";
+import { useState, useCallback } from "react";
+import type { ConversationMessage } from "@agents-run/api";
+import { Bot, Play, Pause, ArrowRight, RefreshCw, ChevronDown, ChevronRight, MessageSquareText } from "lucide-react";
+import MessageBlock from "../message-block";
 
 interface TaskInput {
   description: string;
@@ -11,6 +14,8 @@ interface TaskInput {
 
 interface TaskRendererProps {
   input: TaskInput;
+  sessionId?: string;
+  agentId?: string;
 }
 
 function getAgentColor(agentType: string): string {
@@ -47,8 +52,48 @@ function getAgentBgColor(agentType: string): string {
   return "bg-blue-500/10 border-blue-500/20";
 }
 
+function getAgentBorderColor(agentType: string): string {
+  const type = agentType.toLowerCase();
+  if (type === "explore") return "border-cyan-500/30";
+  if (type === "plan") return "border-violet-500/30";
+  if (type === "claude-code-guide") return "border-amber-500/30";
+  if (type === "general-purpose") return "border-emerald-500/30";
+  return "border-blue-500/30";
+}
+
 export function TaskRenderer(props: TaskRendererProps) {
-  const { input } = props;
+  const { input, sessionId, agentId } = props;
+  const [showConversation, setShowConversation] = useState(false);
+  const [subMessages, setSubMessages] = useState<ConversationMessage[] | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  const toggleConversation = useCallback(() => {
+    if (!sessionId || !agentId) return;
+
+    if (showConversation) {
+      setShowConversation(false);
+      return;
+    }
+
+    if (subMessages !== null) {
+      setShowConversation(true);
+      return;
+    }
+
+    setLoadingMessages(true);
+    setShowConversation(true);
+
+    fetch(`/api/conversation/${sessionId}/subagent/${agentId}`)
+      .then((r) => r.json())
+      .then((messages: ConversationMessage[]) => {
+        setSubMessages(messages);
+        setLoadingMessages(false);
+      })
+      .catch(() => {
+        setSubMessages([]);
+        setLoadingMessages(false);
+      });
+  }, [sessionId, agentId, showConversation, subMessages]);
 
   if (!input) {
     return null;
@@ -56,6 +101,8 @@ export function TaskRenderer(props: TaskRendererProps) {
 
   const agentColor = getAgentColor(input.subagent_type);
   const agentBgColor = getAgentBgColor(input.subagent_type);
+  const agentBorderColor = getAgentBorderColor(input.subagent_type);
+  const hasSubagent = !!(sessionId && agentId);
 
   return (
     <div className="w-full mt-2">
@@ -101,6 +148,52 @@ export function TaskRenderer(props: TaskRendererProps) {
             </p>
           </div>
         </div>
+
+        {hasSubagent && (
+          <div className="border-t border-zinc-700/50">
+            <button
+              onClick={toggleConversation}
+              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/30 transition-colors"
+            >
+              {showConversation ? (
+                <ChevronDown size={12} />
+              ) : (
+                <ChevronRight size={12} />
+              )}
+              <MessageSquareText size={12} className={agentColor} />
+              <span>
+                {showConversation ? "Hide" : "View"} sub-agent conversation
+              </span>
+              {subMessages !== null && (
+                <span className="text-[10px] text-zinc-600 ml-1">
+                  ({subMessages.filter((m) => m.type === "user" || m.type === "assistant").length} messages)
+                </span>
+              )}
+            </button>
+
+            {showConversation && (
+              <div className={`border-l-2 ${agentBorderColor} ml-3 mr-3 mb-3`}>
+                {loadingMessages ? (
+                  <div className="px-4 py-3 text-xs text-zinc-500">
+                    Loading conversation...
+                  </div>
+                ) : subMessages && subMessages.length > 0 ? (
+                  <div className="flex flex-col gap-1.5 pl-3 pt-2">
+                    {subMessages
+                      .filter((m) => m.type === "user" || m.type === "assistant")
+                      .map((msg, index) => (
+                        <MessageBlock key={msg.uuid || index} message={msg} />
+                      ))}
+                  </div>
+                ) : (
+                  <div className="px-4 py-3 text-xs text-zinc-500">
+                    No conversation data available
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, memo } from "react";
-import type { ConversationMessage, ContentBlock } from "@claude-run/api";
+import type { ConversationMessage, ContentBlock } from "@agents-run/api";
 import {
   Lightbulb,
   Wrench,
@@ -19,7 +19,7 @@ import {
   HardDrive,
   Bot,
 } from "lucide-react";
-import { sanitizeText } from "../utils";
+import { sanitizeText, getProviderInfo } from "../utils";
 import { MarkdownRenderer } from "./markdown-renderer";
 import {
   TodoRenderer,
@@ -38,6 +38,8 @@ import {
 
 interface MessageBlockProps {
   message: ConversationMessage;
+  sessionId?: string;
+  subagentMap?: Map<string, string>;
 }
 
 function buildToolMap(content: ContentBlock[]): Map<string, string> {
@@ -51,10 +53,12 @@ function buildToolMap(content: ContentBlock[]): Map<string, string> {
 }
 
 const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
-  const { message } = props;
+  const { message, sessionId, subagentMap } = props;
 
   const isUser = message.type === "user";
   const content = message.message?.content;
+  const model = message.message?.model;
+  const provider = !isUser ? getProviderInfo(model) : null;
 
   const getTextBlocks = (): ContentBlock[] => {
     if (!content || typeof content === "string") {
@@ -97,8 +101,13 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
     return (
       <div className="flex flex-col gap-1 py-0.5">
         {toolBlocks.map((block, index) => (
-          <ContentBlockRenderer key={index} block={block} toolMap={toolMap} />
+          <ContentBlockRenderer key={index} block={block} toolMap={toolMap} sessionId={sessionId} subagentMap={subagentMap} />
         ))}
+        {provider && (
+          <span className={`text-[9px] ${provider.color} px-1 py-px rounded border w-fit`}>
+            {model}
+          </span>
+        )}
       </div>
     );
   }
@@ -128,7 +137,7 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
           ) : (
             <div className="flex flex-col gap-1">
               {visibleTextBlocks.map((block, index) => (
-                <ContentBlockRenderer key={index} block={block} isUser={isUser} toolMap={toolMap} />
+                <ContentBlockRenderer key={index} block={block} isUser={isUser} toolMap={toolMap} sessionId={sessionId} subagentMap={subagentMap} />
               ))}
             </div>
           )}
@@ -137,8 +146,16 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
         {hasTools && (
           <div className="flex flex-col gap-1 mt-1.5">
             {toolBlocks.map((block, index) => (
-              <ContentBlockRenderer key={index} block={block} toolMap={toolMap} />
+              <ContentBlockRenderer key={index} block={block} toolMap={toolMap} sessionId={sessionId} subagentMap={subagentMap} />
             ))}
+          </div>
+        )}
+
+        {provider && (
+          <div className="mt-1">
+            <span className={`text-[9px] ${provider.color} px-1 py-px rounded border`}>
+              {model}
+            </span>
           </div>
         )}
       </div>
@@ -150,6 +167,8 @@ interface ContentBlockRendererProps {
   block: ContentBlock;
   isUser?: boolean;
   toolMap?: Map<string, string>;
+  sessionId?: string;
+  subagentMap?: Map<string, string>;
 }
 
 const TOOL_ICONS: Record<string, typeof Wrench> = {
@@ -161,6 +180,10 @@ const TOOL_ICONS: Record<string, typeof Wrench> = {
   write: FilePlus2,
   glob: FolderOpen,
   task: Bot,
+  exec_command: Terminal,
+  read_file: FileCode,
+  replace: Pencil,
+  write_file: FilePlus2,
 };
 
 const TOOL_ICON_PATTERNS: Array<{ patterns: string[]; icon: typeof Wrench }> = [
@@ -208,6 +231,15 @@ const TOOL_PREVIEW_HANDLERS: Record<string, PreviewHandler> = {
   grep: (input) => input.pattern ? `"${String(input.pattern)}"` : null,
   glob: (input) => input.pattern ? String(input.pattern) : null,
   task: (input) => input.description ? String(input.description) : null,
+  exec_command: (input) => {
+    const cmd = input.cmd || input.command;
+    if (!cmd) return null;
+    const cmdStr = String(cmd);
+    return cmdStr.length > 50 ? cmdStr.slice(0, 50) + "..." : cmdStr;
+  },
+  read_file: (input) => input.file_path ? getFilePathPreview(String(input.file_path)) : null,
+  replace: (input) => input.file_path ? getFilePathPreview(String(input.file_path)) : null,
+  write_file: (input) => input.file_path ? getFilePathPreview(String(input.file_path)) : null,
 };
 
 function getToolPreview(toolName: string, input: Record<string, unknown> | undefined): string | null {
@@ -237,10 +269,12 @@ function getToolPreview(toolName: string, input: Record<string, unknown> | undef
 interface ToolInputRendererProps {
   toolName: string;
   input: Record<string, unknown>;
+  sessionId?: string;
+  agentId?: string;
 }
 
 function ToolInputRenderer(props: ToolInputRendererProps) {
-  const { toolName, input } = props;
+  const { toolName, input, sessionId, agentId } = props;
   const name = toolName.toLowerCase();
 
   if (name === "todowrite" && input.todos) {
@@ -276,7 +310,7 @@ function ToolInputRenderer(props: ToolInputRendererProps) {
   }
 
   if (name === "task" && input.prompt) {
-    return <TaskRenderer input={input as { description: string; prompt: string; subagent_type: string; model?: string; run_in_background?: boolean; resume?: string }} />;
+    return <TaskRenderer input={input as { description: string; prompt: string; subagent_type: string; model?: string; run_in_background?: boolean; resume?: string }} sessionId={sessionId} agentId={agentId} />;
   }
 
   return (
@@ -340,7 +374,7 @@ function ToolResultRenderer(props: ToolResultRendererProps) {
 }
 
 function ContentBlockRenderer(props: ContentBlockRendererProps) {
-  const { block, isUser, toolMap } = props;
+  const { block, isUser, toolMap, sessionId, subagentMap } = props;
   const [expanded, setExpanded] = useState(false);
 
   if (block.type === "text" && block.text) {
@@ -422,7 +456,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
           )}
         </button>
         {isExpanded && hasInput && hasSpecialRenderer ? (
-          <ToolInputRenderer toolName={block.name || ""} input={input} />
+          <ToolInputRenderer toolName={block.name || ""} input={input} sessionId={sessionId} agentId={block.id && subagentMap ? subagentMap.get(block.id) : undefined} />
         ) : (
           expanded &&
           hasInput && (

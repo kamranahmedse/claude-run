@@ -9,7 +9,7 @@ export default defineConfig({
   base: "/",
   resolve: {
     alias: {
-      "@claude-run/api": resolve(__dirname, "../api/storage.ts"),
+      "@agents-run/api": resolve(__dirname, "../api/storage.ts"),
     },
   },
   server: {

@@ -1,13 +1,17 @@
 <div align="center">
 
-# Claude Run
+# Agents Run
 
-Browse your Claude Code conversation history in a beautiful web UI
+English | [简体中文](./README.zh-CN.md)
 
-[![npm version](https://img.shields.io/npm/v/claude-run.svg)](https://www.npmjs.com/package/claude-run)
+Browse AI coding session history from multiple tools in a unified web UI
+
+[![npm version](https://img.shields.io/npm/v/agents-run.svg)](https://www.npmjs.com/package/agents-run)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-<img src=".github/claude-run.gif" alt="Claude Run Demo" width="800" />
+<img src=".github/agents-run.gif" alt="Agents Run Demo" width="800" />
+
+<sub>The README demo is generated from synthetic sessions, not from local history.</sub>
 
 </div>
 
@@ -16,13 +20,21 @@ Browse your Claude Code conversation history in a beautiful web UI
 Run the project simply by executing
 
 ```bash
-npx claude-run
+npx agents-run
+```
+
+Or, after installing globally, use:
+
+```bash
+agents-run
 ```
 
 The browser will open automatically at http://localhost:12001.
 
 ## Features
 
+- **Multi-provider support** - Browse conversations from Claude Code, Codex CLI/Desktop, and Gemini CLI in one place
+- **Token usage & cost tracking** - Per-session cost breakdown with model-aware pricing for all providers
 - **Real-time streaming** - Watch conversations update live as Claude responds
 - **Search** - Find sessions by prompt text or project name
 - **Filter by project** - Focus on specific projects
@@ -36,19 +48,26 @@ The browser will open automatically at http://localhost:12001.
 Install globally via npm:
 
 ```bash
-npm install -g claude-run
+npm install -g agents-run
+```
+
+If you prefer Homebrew:
+
+```bash
+brew tap SunZhiC/agents-run
+brew install agents-run
 ```
 
 Then run it from any directory:
 
 ```bash
-claude-run
+agents-run
 ```
 
-The browser will open automatically at http://localhost:12001, showing all your Claude Code conversations.
+The browser will open automatically at http://localhost:12001, showing your AI coding sessions across supported providers.
 
 ```bash
-claude-run [options]
+agents-run [options]
 
 Options:
   -V, --version        Show version number
@@ -60,11 +79,20 @@ Options:
 
 ## How It Works
 
-Claude Code stores conversation history in `~/.claude/`. This tool reads that data and presents it in a web interface with:
+Agents Run reads conversation history from multiple AI coding tools and presents them in a unified web interface:
 
-- **Session list** - All your conversations, sorted by recency
+| Provider | Data Directory | Features |
+|---|---|---|
+| **Claude Code** | `~/.claude/` | Full token usage with cost breakdown, session rename/delete, resume |
+| **Codex CLI/Desktop** | `~/.codex/` | Token usage with cost breakdown, resume |
+| **Gemini CLI** | `~/.gemini/` | Token usage with cost breakdown |
+
+The interface includes:
+
+- **Session list** - All your conversations across providers, sorted by recency
 - **Project filter** - Focus on a specific project
 - **Conversation view** - Full message history with tool calls
+- **Token usage & costs** - Model-aware pricing (dynamically resolved per session)
 - **Session header** - Shows conversation title, project name, and timestamp
 - **Resume command** - Copies the command to resume the conversation
 - **Real-time updates** - SSE streaming for live conversations
@@ -72,14 +100,14 @@ Claude Code stores conversation history in `~/.claude/`. This tool reads that da
 ## Requirements
 
 - Node.js 20+
-- Claude Code installed and used at least once
+- At least one of: Claude Code, Codex CLI, or Gemini CLI installed and used
 
 ## Development
 
 ```bash
 # Clone the repo
-git clone https://github.com/kamranahmedse/claude-run.git
-cd claude-run
+git clone https://github.com/SunZhiC/agents-run.git
+cd agents-run
 
 # Install dependencies
 pnpm install
@@ -89,8 +117,21 @@ pnpm dev
 
 # Build for production
 pnpm build
+
+# Refresh the README demo GIF with synthetic data
+pnpm demo:gif
+```
+
+## Release
+
+```bash
+# Publish a new npm release
+npm publish
+
+# Sync the Homebrew tap formula to the latest published npm version
+pnpm sync:homebrew
 ```
 
 ## License
 
-MIT © Kamran Ahmed
+MIT

@@ -1,10 +1,10 @@
 {
-  "name": "claude-run",
-  "version": "0.2.2",
-  "description": "A beautiful web UI for browsing Claude Code conversation history",
+  "name": "agents-run",
+  "version": "1.4.0",
+  "description": "Local web UI for browsing AI coding session history across multiple providers",
   "type": "module",
   "bin": {
-    "claude-run": "./dist/index.js"
+    "agents-run": "dist/index.js"
   },
   "main": "./dist/index.js",
   "files": [
@@ -17,11 +17,15 @@
     "build": "pnpm build:server && pnpm build:web",
     "build:web": "vite build --config web/vite.config.ts",
     "build:server": "tsup api/index.ts --format esm --dts --clean",
+    "demo:gif": "pnpm build && node scripts/generate-readme-demo.mjs",
+    "sync:homebrew": "bash scripts/sync-homebrew-tap.sh",
     "start": "node dist/index.js",
+    "test": "vitest run",
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
+    "@notionhq/client": "^5.9.0",
     "@tanstack/react-virtual": "^3.13.14",
     "chokidar": "^4.0.3",
     "commander": "^13.1.0",
@@ -32,7 +36,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.7",
@@ -41,34 +46,48 @@
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.2",
+    "playwright": "^1.58.2",
     "prettier": "^3.7.4",
     "tailwindcss": "^4.0.7",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
-    "vite": "^6.0.11"
+    "vite": "^6.0.11",
+    "vitest": "^4.1.0"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "keywords": [
-    "claude",
-    "claude-code",
-    "cli",
+    "agent",
     "conversation",
-    "viewer",
-    "streaming",
     "ai",
+    "coding",
+    "cli",
+    "history",
+    "multi-provider",
+    "llm",
+    "session-history",
+    "viewer",
+    "web-ui",
+    "developer-tools",
+    "claude",
+    "codex",
+    "gemini",
+    "openai",
     "anthropic"
   ],
-  "author": "Kamran Ahmed",
+  "author": "ZHICHAO SUN",
+  "contributors": [
+    "Kamran Ahmed"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kamranahmedse/claude-run.git"
+    "url": "git+https://github.com/SunZhiC/agents-run.git"
   },
-  "homepage": "https://github.com/kamranahmedse/claude-run#readme",
+  "homepage": "https://github.com/SunZhiC/agents-run#readme",
   "bugs": {
-    "url": "https://github.com/kamranahmedse/claude-run/issues"
+    "url": "https://github.com/SunZhiC/agents-run/issues"
   }
 }

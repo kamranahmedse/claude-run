@@ -17,7 +17,7 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@claude-run/api": ["../api/storage.ts"]
+      "@agents-run/api": ["../api/storage.ts"]
     }
   },
   "include": [".", "../api/storage.ts"]
