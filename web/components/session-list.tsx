@@ -25,6 +25,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
     const query = search.toLowerCase();
     return sessions.filter(
       (s) =>
+        s.id.toLowerCase().includes(query) ||
         s.display.toLowerCase().includes(query) ||
         s.projectName.toLowerCase().includes(query)
     );
