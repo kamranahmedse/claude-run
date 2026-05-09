@@ -12,6 +12,7 @@ import {
   getProjects,
   getConversation,
   getConversationStream,
+  renameSession,
   deleteSession,
   invalidateHistoryCache,
   addToFileIndex,
@@ -61,7 +62,7 @@ export function createServer(options: ServerOptions) {
       "*",
       cors({
         origin: ["http://localhost:12000"],
-        allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+        allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowHeaders: ["Content-Type"],
       }),
     );
@@ -80,6 +81,17 @@ export function createServer(options: ServerOptions) {
   app.delete("/api/sessions/:id", async (c) => {
     const sessionId = c.req.param("id");
     const success = await deleteSession(sessionId);
+    return c.json({ success });
+  });
+
+  app.put("/api/sessions/:id/rename", async (c) => {
+    const sessionId = c.req.param("id");
+    const body = await c.req.json();
+    const name = body.name?.trim();
+    if (!name) {
+      return c.json({ success: false, error: "Name is required" }, 400);
+    }
+    const success = await renameSession(sessionId, name);
     return c.json({ success });
   });
 

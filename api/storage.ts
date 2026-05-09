@@ -378,6 +378,34 @@ export async function getConversationStream(
   }
 }
 
+export async function renameSession(sessionId: string, newName: string): Promise<boolean> {
+  const historyPath = join(claudeDir, "history.jsonl");
+  try {
+    const content = await readFile(historyPath, "utf-8");
+    const lines = content.trim().split("\n").filter(Boolean);
+    let updated = false;
+    const newLines = lines.map((line) => {
+      try {
+        const entry = JSON.parse(line);
+        if (entry.sessionId === sessionId && !updated) {
+          updated = true;
+          return JSON.stringify({ ...entry, display: newName });
+        }
+        return line;
+      } catch {
+        return line;
+      }
+    });
+    if (!updated) return false;
+    await writeFile(historyPath, newLines.join("\n") + "\n", "utf-8");
+    invalidateHistoryCache();
+    return true;
+  } catch (err) {
+    console.error("Error renaming session:", err);
+    return false;
+  }
+}
+
 export async function deleteSession(sessionId: string): Promise<boolean> {
   // 1. Find and delete the session .jsonl file
   const filePath = await findSessionFile(sessionId);

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { Session } from "@claude-run/api";
-import { PanelLeft, Copy, Check, Sun, Moon } from "lucide-react";
+import { PanelLeft, Copy, Check, Sun, Moon, Pencil } from "lucide-react";
 import { formatTime } from "./utils";
 import SessionList from "./components/session-list";
 import SessionView from "./components/session-view";
@@ -10,17 +10,65 @@ interface SessionHeaderProps {
   session: Session;
   copied: boolean;
   onCopyResumeCommand: (sessionId: string, projectPath: string) => void;
+  onRenameSession: (sessionId: string, newName: string) => void;
 }
 
 function SessionHeader(props: SessionHeaderProps) {
-  const { session, copied, onCopyResumeCommand } = props;
+  const { session, copied, onCopyResumeCommand, onRenameSession } = props;
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const startRename = useCallback(() => {
+    setRenameValue(session.display);
+    setRenaming(true);
+  }, [session.display]);
+
+  useEffect(() => {
+    if (renaming && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [renaming]);
+
+  const handleRenameSave = useCallback(() => {
+    const trimmed = renameValue.trim();
+    if (trimmed && trimmed !== session.display) {
+      onRenameSession(session.id, trimmed);
+    }
+    setRenaming(false);
+  }, [renameValue, session.id, session.display, onRenameSession]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleRenameSave();
+    } else if (e.key === "Escape") {
+      setRenaming(false);
+    }
+  }, [handleRenameSave]);
 
   return (
     <>
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <span className="text-sm theme-text-primary truncate max-w-xs">
-          {session.display}
-        </span>
+        {renaming ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={handleRenameSave}
+            onKeyDown={handleKeyDown}
+            className="text-sm theme-text-primary bg-transparent border border-blue-500/50 rounded px-2 py-0.5 outline-none flex-1 min-w-0"
+          />
+        ) : (
+          <span
+            className="text-sm theme-text-primary truncate max-w-xs cursor-pointer hover:underline decoration-dotted underline-offset-2"
+            onClick={startRename}
+            title="Click to rename"
+          >
+            {session.display}
+          </span>
+        )}
         <span className="text-xs theme-text-tertiary shrink-0">
           {session.projectName}
         </span>
@@ -28,6 +76,14 @@ function SessionHeader(props: SessionHeaderProps) {
           {formatTime(session.timestamp)}
         </span>
       </div>
+      <button
+        onClick={startRename}
+        className="flex items-center gap-2 px-2.5 py-1.5 text-xs theme-text-secondary theme-btn rounded transition-colors cursor-pointer shrink-0"
+        title="Rename session"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+        <span>Rename</span>
+      </button>
       <button
         onClick={() => onCopyResumeCommand(session.id, session.project)}
         className="flex items-center gap-2 px-2.5 py-1.5 text-xs theme-text-secondary theme-btn rounded transition-colors cursor-pointer shrink-0"
@@ -182,6 +238,23 @@ function App() {
     setSelectedSession((prev) => (prev === sessionId ? null : prev));
   }, []);
 
+  const handleRenameSession = useCallback((sessionId: string, newName: string) => {
+    fetch(`/api/sessions/${sessionId}/rename`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setSessions((prev) =>
+            prev.map((s) => (s.id === sessionId ? { ...s, display: newName } : s))
+          );
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   return (
     <div className="flex h-screen theme-page">
       <aside
@@ -245,6 +318,7 @@ function App() {
               session={selectedSessionData}
               copied={copied}
               onCopyResumeCommand={handleCopyResumeCommand}
+              onRenameSession={handleRenameSession}
             />
           )}
           <button
