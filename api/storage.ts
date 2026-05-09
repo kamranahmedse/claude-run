@@ -1,4 +1,4 @@
-import { readdir, readFile, stat, open } from "fs/promises";
+import { readdir, readFile, stat, open, unlink, writeFile } from "fs/promises";
 import { join, basename } from "path";
 import { homedir } from "os";
 import { createInterface } from "readline";
@@ -376,4 +376,40 @@ export async function getConversationStream(
       await fileHandle.close();
     }
   }
+}
+
+export async function deleteSession(sessionId: string): Promise<boolean> {
+  // 1. Find and delete the session .jsonl file
+  const filePath = await findSessionFile(sessionId);
+  if (filePath) {
+    try {
+      await unlink(filePath);
+    } catch (err) {
+      console.error("Error deleting session file:", err);
+    }
+  }
+
+  // 2. Remove entries from history.jsonl
+  const historyPath = join(claudeDir, "history.jsonl");
+  try {
+    const content = await readFile(historyPath, "utf-8");
+    const lines = content.trim().split("\n").filter(Boolean);
+    const filtered = lines.filter((line) => {
+      try {
+        const entry = JSON.parse(line);
+        return entry.sessionId !== sessionId;
+      } catch {
+        return true; // keep malformed lines
+      }
+    });
+    await writeFile(historyPath, filtered.join("\n") + "\n", "utf-8");
+  } catch (err) {
+    console.error("Error cleaning history.jsonl:", err);
+  }
+
+  // 3. Clean up caches
+  invalidateHistoryCache();
+  fileIndex.delete(sessionId);
+
+  return true;
 }

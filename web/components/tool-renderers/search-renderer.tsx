@@ -35,34 +35,34 @@ export function GrepRenderer(props: GrepRendererProps) {
 
   return (
     <div className="w-full mt-2">
-      <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-lg overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-700/50 bg-zinc-800/30">
+      <div className="theme-surface border theme-border-strong rounded-lg overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2 border-b theme-border-strong bg-[var(--bg-surface-hover)]">
           <Search size={14} className="text-amber-400" />
-          <span className="text-xs font-medium text-zinc-300">Search</span>
+          <span className="text-xs font-medium theme-text-secondary">Search</span>
         </div>
         <div className="p-3 space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-500">Pattern:</span>
-            <code className="text-xs font-mono text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded">
+            <span className="text-xs theme-text-muted">Pattern:</span>
+            <code className="text-xs font-mono text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
               {input.pattern}
             </code>
           </div>
           {input.path && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-500">Path:</span>
-              <span className="text-xs font-mono text-zinc-300">{input.path}</span>
+              <span className="text-xs theme-text-muted">Path:</span>
+              <span className="text-xs font-mono theme-text-secondary">{input.path}</span>
             </div>
           )}
           {input.glob && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-500">Glob:</span>
-              <span className="text-xs font-mono text-zinc-300">{input.glob}</span>
+              <span className="text-xs theme-text-muted">Glob:</span>
+              <span className="text-xs font-mono theme-text-secondary">{input.glob}</span>
             </div>
           )}
           {input.type && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-500">Type:</span>
-              <span className="text-xs font-mono text-zinc-300">{input.type}</span>
+              <span className="text-xs theme-text-muted">Type:</span>
+              <span className="text-xs font-mono theme-text-secondary">{input.type}</span>
             </div>
           )}
         </div>
@@ -80,22 +80,22 @@ export function GlobRenderer(props: GlobRendererProps) {
 
   return (
     <div className="w-full mt-2">
-      <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-lg overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-700/50 bg-zinc-800/30">
+      <div className="theme-surface border theme-border-strong rounded-lg overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2 border-b theme-border-strong bg-[var(--bg-surface-hover)]">
           <FolderOpen size={14} className="text-cyan-400" />
-          <span className="text-xs font-medium text-zinc-300">Find Files</span>
+          <span className="text-xs font-medium theme-text-secondary">Find Files</span>
         </div>
         <div className="p-3 space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-500">Pattern:</span>
-            <code className="text-xs font-mono text-cyan-300 bg-cyan-500/10 px-1.5 py-0.5 rounded">
+            <span className="text-xs theme-text-muted">Pattern:</span>
+            <code className="text-xs font-mono text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">
               {input.pattern}
             </code>
           </div>
           {input.path && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-500">Path:</span>
-              <span className="text-xs font-mono text-zinc-300">{input.path}</span>
+              <span className="text-xs theme-text-muted">Path:</span>
+              <span className="text-xs font-mono theme-text-secondary">{input.path}</span>
             </div>
           )}
         </div>
@@ -110,9 +110,9 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
   if (!content || content.trim().length === 0) {
     return (
       <div className="w-full mt-2">
-        <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/30 border border-zinc-700/50 rounded-lg">
-          <Search size={14} className="text-zinc-500" />
-          <span className="text-xs text-zinc-400">No matches found</span>
+        <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-surface-hover)] border theme-border-strong rounded-lg">
+          <Search size={14} className="theme-text-muted" />
+          <span className="text-xs theme-text-tertiary">No matches found</span>
         </div>
       </div>
     );
@@ -126,18 +126,18 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
   if (isFileList) {
     return (
       <div className="w-full mt-2">
-        <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-lg overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-700/50 bg-zinc-800/30">
+        <div className="theme-surface border theme-border-strong rounded-lg overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 border-b theme-border-strong bg-[var(--bg-surface-hover)]">
             <FolderOpen size={14} className="text-cyan-400" />
-            <span className="text-xs font-medium text-zinc-300">Files Found</span>
-            <span className="text-xs text-zinc-500 ml-auto">{lines.length} files</span>
+            <span className="text-xs font-medium theme-text-secondary">Files Found</span>
+            <span className="text-xs theme-text-muted ml-auto">{lines.length} files</span>
           </div>
           <div className="overflow-y-auto max-h-60">
-            <ul className="divide-y divide-zinc-800/50">
+            <ul className="divide-y divide-[var(--border-subtle)]">
               {displayLines.map((line, index) => (
-                <li key={index} className="group flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-800/30">
-                  <FileText size={12} className="text-zinc-500 flex-shrink-0" />
-                  <span className="text-xs font-mono text-zinc-300 truncate flex-1">{line}</span>
+                <li key={index} className="group flex items-center gap-2 px-3 py-1.5 hover:bg-[var(--bg-surface-hover)]">
+                  <FileText size={12} className="theme-text-muted flex-shrink-0" />
+                  <span className="text-[13px] font-mono theme-text-secondary truncate flex-1">{line}</span>
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <CopyButton text={line} />
                   </div>
@@ -145,7 +145,7 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
               ))}
             </ul>
             {truncated && (
-              <div className="px-3 py-2 text-xs text-zinc-500 border-t border-zinc-700/50">
+              <div className="px-3 py-2 text-xs theme-text-muted border-t theme-border-strong">
                 ... {lines.length - maxLines} more files
               </div>
             )}
@@ -157,17 +157,17 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
 
   return (
     <div className="w-full mt-2">
-      <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-lg overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-700/50 bg-zinc-800/30">
+      <div className="theme-surface border theme-border-strong rounded-lg overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2 border-b theme-border-strong bg-[var(--bg-surface-hover)]">
           <Search size={14} className="text-amber-400" />
-          <span className="text-xs font-medium text-zinc-300">Results</span>
-          <span className="text-xs text-zinc-500 ml-auto">{lines.length} matches</span>
+          <span className="text-xs font-medium theme-text-secondary">Results</span>
+          <span className="text-xs theme-text-muted ml-auto">{lines.length} matches</span>
         </div>
         <div className="overflow-x-auto max-h-80 overflow-y-auto">
-          <pre className="text-xs font-mono p-3 text-zinc-300 whitespace-pre-wrap">
+          <pre className="text-xs font-mono p-3 theme-text-secondary whitespace-pre-wrap">
             {displayLines.join("\n")}
             {truncated && (
-              <div className="text-zinc-500 mt-2 pt-2 border-t border-zinc-700/50">
+              <div className="theme-text-muted mt-2 pt-2 border-t theme-border-strong">
                 ... {lines.length - maxLines} more matches
               </div>
             )}

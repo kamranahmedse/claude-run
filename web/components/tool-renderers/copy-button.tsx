@@ -32,13 +32,13 @@ export function CopyButton(props: CopyButtonProps) {
   return (
     <button
       onClick={handleCopy}
-      className={`p-1 rounded hover:bg-zinc-700/50 transition-colors ${className}`}
+      className={`p-1 rounded theme-surface-hover transition-colors ${className}`}
       title={copied ? "Copied!" : "Copy path"}
     >
       {copied ? (
         <Check size={12} className="text-emerald-400" />
       ) : (
-        <Copy size={12} className="text-zinc-500 hover:text-zinc-300" />
+        <Copy size={12} className="theme-text-muted hover:theme-text-secondary" />
       )}
     </button>
   );

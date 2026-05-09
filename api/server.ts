@@ -12,6 +12,7 @@ import {
   getProjects,
   getConversation,
   getConversationStream,
+  deleteSession,
   invalidateHistoryCache,
   addToFileIndex,
 } from "./storage";
@@ -60,7 +61,7 @@ export function createServer(options: ServerOptions) {
       "*",
       cors({
         origin: ["http://localhost:12000"],
-        allowMethods: ["GET", "POST", "OPTIONS"],
+        allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
         allowHeaders: ["Content-Type"],
       }),
     );
@@ -74,6 +75,12 @@ export function createServer(options: ServerOptions) {
   app.get("/api/projects", async (c) => {
     const projects = await getProjects();
     return c.json(projects);
+  });
+
+  app.delete("/api/sessions/:id", async (c) => {
+    const sessionId = c.req.param("id");
+    const success = await deleteSession(sessionId);
+    return c.json({ success });
   });
 
   app.get("/api/sessions/stream", async (c) => {

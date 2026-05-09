@@ -21,7 +21,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           h1: (props) => {
             const { children } = props;
             return (
-              <div className="text-base font-semibold text-zinc-100 mt-3 mb-1.5">
+              <div className="text-base font-semibold theme-text-primary mt-3 mb-1.5">
                 {children}
               </div>
             );
@@ -29,7 +29,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           h2: (props) => {
             const { children } = props;
             return (
-              <div className="text-sm font-semibold text-zinc-100 mt-3 mb-1.5">
+              <div className="text-sm font-semibold theme-text-primary mt-3 mb-1.5">
                 {children}
               </div>
             );
@@ -37,7 +37,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           h3: (props) => {
             const { children } = props;
             return (
-              <div className="text-[13px] font-medium text-zinc-100 mt-3 mb-1.5">
+              <div className="text-[14px] font-medium theme-text-primary mt-3 mb-1.5">
                 {children}
               </div>
             );
@@ -45,7 +45,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           h4: (props) => {
             const { children } = props;
             return (
-              <div className="text-[13px] font-medium text-zinc-100 mt-2 mb-1">
+              <div className="text-[14px] font-medium theme-text-primary mt-2 mb-1">
                 {children}
               </div>
             );
@@ -53,7 +53,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           h5: (props) => {
             const { children } = props;
             return (
-              <div className="text-[13px] font-medium text-zinc-100 mt-2 mb-1">
+              <div className="text-[14px] font-medium theme-text-primary mt-2 mb-1">
                 {children}
               </div>
             );
@@ -61,7 +61,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           h6: (props) => {
             const { children } = props;
             return (
-              <div className="text-[13px] font-medium text-zinc-100 mt-2 mb-1">
+              <div className="text-[14px] font-medium theme-text-primary mt-2 mb-1">
                 {children}
               </div>
             );
@@ -69,7 +69,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           p: (props) => {
             const { children } = props;
             return (
-              <p className="text-[13px] leading-relaxed text-zinc-200 whitespace-pre-wrap my-2">
+              <p className="text-[14px] leading-relaxed theme-text-secondary whitespace-pre-wrap my-2">
                 {children}
               </p>
             );
@@ -81,7 +81,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
+                className="theme-link hover:opacity-80 underline underline-offset-2"
               >
                 {children}
               </a>
@@ -90,17 +90,17 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           strong: (props) => {
             const { children } = props;
             return (
-              <strong className="font-semibold text-zinc-50">{children}</strong>
+              <strong className="font-semibold theme-text-primary">{children}</strong>
             );
           },
           em: (props) => {
             const { children } = props;
-            return <em className="italic text-zinc-200">{children}</em>;
+            return <em className="italic theme-text-secondary">{children}</em>;
           },
           code: (props) => {
             const { children } = props;
             return (
-              <code className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-cyan-300 text-[12px] font-mono">
+              <code className="px-1.5 py-0.5 rounded theme-code-inline text-[12px] font-mono">
                 {children}
               </code>
             );
@@ -116,14 +116,14 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
               const codeContent = codeNode.children?.map((c) => c.value).join("") || "";
 
               return (
-                <div className="relative group my-2 rounded-lg overflow-hidden border border-zinc-700/50">
-                  <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900 border-b border-zinc-700/50">
-                    <span className="text-[10px] text-zinc-500 font-mono">
+                <div className="relative group my-2 rounded-lg overflow-hidden border theme-border-strong">
+                  <div className="flex items-center justify-between px-3 py-1.5 theme-surface border-b theme-border-strong">
+                    <span className="text-[10px] theme-text-muted font-mono">
                       {language}
                     </span>
                     <CopyButton text={codeContent} />
                   </div>
-                  <pre className="text-xs text-zinc-300 bg-zinc-900/80 p-3 overflow-x-auto rounded-t-none!">
+                  <pre className="text-xs theme-code-block p-3 overflow-x-auto rounded-t-none!">
                     <code>{codeContent}</code>
                   </pre>
                 </div>
@@ -136,7 +136,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           ul: (props) => {
             const { children } = props;
             return (
-              <ul className="my-2 ml-3 space-y-1 list-disc list-inside text-zinc-200">
+              <ul className="my-2 ml-3 space-y-1 list-disc list-inside theme-text-secondary">
                 {children}
               </ul>
             );
@@ -144,7 +144,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           ol: (props) => {
             const { children } = props;
             return (
-              <ol className="my-2 ml-3 space-y-1 list-decimal list-inside text-zinc-200">
+              <ol className="my-2 ml-3 space-y-1 list-decimal list-inside theme-text-secondary">
                 {children}
               </ol>
             );
@@ -152,34 +152,34 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           li: (props) => {
             const { children } = props;
             return (
-              <li className="text-[13px] leading-relaxed">{children}</li>
+              <li className="text-[14px] leading-relaxed">{children}</li>
             );
           },
           blockquote: (props) => {
             const { children } = props;
             return (
-              <div className="border-l-2 border-zinc-600 pl-3 my-2 text-zinc-400 italic">
+              <div className="border-l-2 theme-border-strong pl-3 my-2 theme-text-muted italic">
                 {children}
               </div>
             );
           },
-          hr: () => <hr className="border-zinc-700 my-4" />,
+          hr: () => <hr className="theme-border my-4" />,
           table: (props) => {
             const { children } = props;
             return (
-              <div className="my-2 overflow-x-auto rounded-lg border border-zinc-700/50">
-                <table className="w-full text-[13px]">{children}</table>
+              <div className="my-2 overflow-x-auto rounded-lg border theme-border-strong">
+                <table className="w-full text-[14px]">{children}</table>
               </div>
             );
           },
           thead: (props) => {
             const { children } = props;
-            return <thead className="bg-zinc-900">{children}</thead>;
+            return <thead className="theme-surface">{children}</thead>;
           },
           tr: (props) => {
             const { children } = props;
             return (
-              <tr className="border-b border-zinc-700/50 last:border-b-0">
+              <tr className="border-b theme-border-strong last:border-b-0">
                 {children}
               </tr>
             );
@@ -187,14 +187,14 @@ export const MarkdownRenderer = memo(function MarkdownRenderer(
           th: (props) => {
             const { children } = props;
             return (
-              <th className="px-3 py-2 text-left font-medium text-zinc-200">
+              <th className="px-3 py-2 text-left font-medium theme-text-primary">
                 {children}
               </th>
             );
           },
           td: (props) => {
             const { children } = props;
-            return <td className="px-3 py-2 text-zinc-300">{children}</td>;
+            return <td className="px-3 py-2 theme-text-secondary">{children}</td>;
           },
         }}
       >

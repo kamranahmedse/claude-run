@@ -21,14 +21,33 @@ export function formatTime(timestamp: number): string {
   return date.toLocaleDateString();
 }
 
+export function formatTimeAbsolute(timestamp: number): string {
+  const d = new Date(timestamp);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const SANITIZE_PATTERNS = [
   /<command-name>[^<]*<\/command-name>/g,
   /<command-message>[^<]*<\/command-message>/g,
   /<command-args>[^<]*<\/command-args>/g,
   /<local-command-stdout>[^<]*<\/local-command-stdout>/g,
+  /<local-command-caveat>[\s\S]*?<\/local-command-caveat>/g,
+  /<task-notification>[\s\S]*?<\/task-notification>/g,
   /<system-reminder>[\s\S]*?<\/system-reminder>/g,
   /^\s*Caveat:.*?unless the user explicitly asks you to\./s,
 ];
+
+const TASK_NOTIFICATION_PATTERN = /<task-notification>[\s\S]*?<summary>([\s\S]*?)<\/summary>[\s\S]*?<\/task-notification>/g;
+
+export function extractTaskNotifications(text: string): string[] {
+  const summaries: string[] = [];
+  let match;
+  while ((match = TASK_NOTIFICATION_PATTERN.exec(text)) !== null) {
+    summaries.push(match[1].trim());
+  }
+  return summaries;
+}
 
 export function sanitizeText(text: string): string {
   let result = text;

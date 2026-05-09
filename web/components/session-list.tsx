@@ -1,18 +1,21 @@
-import { useState, useMemo, memo, useRef } from "react";
+import { useState, useMemo, memo, useRef, useCallback } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { Session } from "@claude-run/api";
-import { formatTime } from "../utils";
+import { formatTimeAbsolute } from "../utils";
+import { Trash2, Check, X } from "lucide-react";
 
 interface SessionListProps {
   sessions: Session[];
   selectedSession: string | null;
   onSelectSession: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string) => void;
   loading?: boolean;
 }
 
 const SessionList = memo(function SessionList(props: SessionListProps) {
-  const { sessions, selectedSession, onSelectSession, loading } = props;
+  const { sessions, selectedSession, onSelectSession, onDeleteSession, loading } = props;
   const [search, setSearch] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const filteredSessions = useMemo(() => {
@@ -35,10 +38,20 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
     measureElement: (element) => element.getBoundingClientRect().height,
   });
 
+  const handleDelete = useCallback((sessionId: string) => {
+    fetch(`/api/sessions/${sessionId}`, { method: "DELETE" })
+      .then((res) => res.json())
+      .then(() => {
+        setConfirmDelete(null);
+        onDeleteSession(sessionId);
+      })
+      .catch(console.error);
+  }, [onDeleteSession]);
+
   return (
-    <div className="h-full overflow-hidden bg-zinc-950 flex flex-col">
-      <div className="px-3 py-2 border-b border-zinc-800/60">
-        <div className="flex items-center gap-2 text-zinc-500">
+    <div className="h-full overflow-hidden theme-page flex flex-col">
+      <div className="px-3 py-2 border-b theme-border">
+        <div className="flex items-center gap-2 theme-text-muted">
           <svg
             className="w-4 h-4 flex-shrink-0"
             fill="none"
@@ -57,12 +70,12 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="flex-1 bg-transparent text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none"
+            className="flex-1 bg-transparent text-sm theme-text-primary placeholder:text-[var(--text-muted)] focus:outline-none"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="text-zinc-600 hover:text-zinc-400 transition-colors"
+              className="theme-text-muted hover:theme-text-secondary transition-colors"
             >
               <svg
                 className="w-4 h-4"
@@ -86,7 +99,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <svg
-              className="w-5 h-5 text-zinc-600 animate-spin"
+              className="w-5 h-5 theme-text-muted animate-spin"
               fill="none"
               viewBox="0 0 24 24"
             >
@@ -106,7 +119,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
             </svg>
           </div>
         ) : filteredSessions.length === 0 ? (
-          <p className="py-8 text-center text-xs text-zinc-600">
+          <p className="py-8 text-center text-xs theme-text-muted">
             {search ? "No sessions match" : "No sessions found"}
           </p>
         ) : (
@@ -132,21 +145,58 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                     width: "100%",
                     transform: `translateY(${virtualItem.start}px)`,
                   }}
-                  className={`px-3 py-3.5 text-left transition-colors overflow-hidden border-b border-zinc-800/40 ${
+                  className={`group px-3 py-3.5 text-left transition-colors overflow-hidden border-b theme-border-subtle ${
                     selectedSession === session.id
-                      ? "bg-cyan-700/30"
-                      : "hover:bg-zinc-900/60"
-                  } ${virtualItem.index === 0 ? "border-t border-t-zinc-800/40" : ""}`}
+                      ? "theme-selected"
+                      : "hover:theme-surface-hover"
+                  } ${virtualItem.index === 0 ? "border-t theme-border-subtle" : ""}`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-zinc-500 font-medium">
+                    <span className="text-[11px] theme-text-tertiary font-medium">
                       {session.projectName}
                     </span>
-                    <span className="text-[10px] text-zinc-600">
-                      {formatTime(session.timestamp)}
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[11px] theme-text-muted">
+                        {formatTimeAbsolute(session.timestamp)}
+                      </span>
+                      {confirmDelete === session.id ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(session.id);
+                            }}
+                            className="p-0.5 rounded hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer"
+                            title="确认删除"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDelete(null);
+                            }}
+                            className="p-0.5 rounded hover:bg-white/10 theme-text-muted transition-colors cursor-pointer"
+                            title="取消"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDelete(session.id);
+                          }}
+                          className="p-0.5 rounded hover:bg-red-500/20 theme-text-muted hover:text-red-400 transition-colors cursor-pointer"
+                          title="删除此对话"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-[12px] text-zinc-300 leading-snug line-clamp-2 break-words">
+                  <p className="text-[13px] theme-text-secondary leading-snug line-clamp-2 break-words">
                     {session.display}
                   </p>
                 </button>
@@ -156,8 +206,8 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
         )}
       </div>
 
-      <div className="px-3 py-2 border-t border-zinc-800/60">
-        <div className="text-[10px] text-zinc-600 text-center">
+      <div className="px-3 py-2 border-t theme-border">
+        <div className="text-[11px] theme-text-muted text-center">
           {sessions.length} session{sessions.length !== 1 ? "s" : ""}
         </div>
       </div>

@@ -19,7 +19,7 @@ import {
   HardDrive,
   Bot,
 } from "lucide-react";
-import { sanitizeText } from "../utils";
+import { sanitizeText, extractTaskNotifications } from "../utils";
 import { MarkdownRenderer } from "./markdown-renderer";
 import {
   TodoRenderer,
@@ -93,6 +93,12 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
 
   const toolMap = Array.isArray(content) ? buildToolMap(content) : new Map<string, string>();
 
+  // Check for task notifications in user string messages
+  const taskNotifications = typeof content === "string" && isUser
+    ? extractTaskNotifications(content)
+    : [];
+  const hasTaskNotifications = taskNotifications.length > 0;
+
   if (!hasText && hasTools) {
     return (
       <div className="flex flex-col gap-1 py-0.5">
@@ -103,45 +109,63 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
     );
   }
 
-  if (!hasText && !hasTools) {
+  if (!hasText && !hasTools && !hasTaskNotifications) {
     return null;
   }
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} min-w-0`}>
-      <div className="max-w-[85%] min-w-0">
-        <div
-          className={`px-3.5 py-2.5 rounded-2xl overflow-hidden ${
-            isUser
-              ? "bg-indigo-600/80 text-indigo-50 rounded-br-md"
-              : "bg-cyan-700/50 text-zinc-100 rounded-bl-md"
-          }`}
-        >
-          {typeof content === "string" ? (
-            isUser ? (
-              <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">
-                {sanitizeText(content)}
+    <div className="flex flex-col gap-1.5 min-w-0">
+      {/* Task notifications rendered as assistant bubbles */}
+      {hasTaskNotifications && (
+        <div className="flex justify-start">
+          <div className="max-w-[85%] min-w-0">
+            {taskNotifications.map((summary, i) => (
+              <div key={i} className="bubble-assistant rounded-bl-md px-3.5 py-2.5 mb-1 inline-flex items-center gap-2">
+                <Bot size={14} className="opacity-60 shrink-0" />
+                <span className="text-[13px]">{summary}</span>
               </div>
-            ) : (
-              <MarkdownRenderer content={sanitizeText(content)} />
-            )
-          ) : (
-            <div className="flex flex-col gap-1">
-              {visibleTextBlocks.map((block, index) => (
-                <ContentBlockRenderer key={index} block={block} isUser={isUser} toolMap={toolMap} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {hasTools && (
-          <div className="flex flex-col gap-1 mt-1.5">
-            {toolBlocks.map((block, index) => (
-              <ContentBlockRenderer key={index} block={block} toolMap={toolMap} />
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Main message bubble */}
+      {hasText && (
+        <div className={`flex ${isUser ? "justify-end" : "justify-start"} min-w-0`}>
+          <div className="max-w-[85%] min-w-0">
+            <div
+              className={`px-3.5 py-2.5 rounded-2xl overflow-hidden ${
+                isUser
+                  ? "bubble-user rounded-br-md"
+                  : "bubble-assistant rounded-bl-md"
+              }`}
+            >
+              {typeof content === "string" ? (
+                isUser ? (
+                  <div className="whitespace-pre-wrap break-words text-[14px] leading-relaxed">
+                    {sanitizeText(content)}
+                  </div>
+                ) : (
+                  <MarkdownRenderer content={sanitizeText(content)} />
+                )
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {visibleTextBlocks.map((block, index) => (
+                    <ContentBlockRenderer key={index} block={block} isUser={isUser} toolMap={toolMap} />
+                  ))}
+                </div>
+              )}
+            </div>
+            {hasTools && (
+              <div className="flex flex-col gap-1 mt-1.5">
+                {toolBlocks.map((block, index) => (
+                  <ContentBlockRenderer key={index} block={block} toolMap={toolMap} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 });
@@ -280,7 +304,7 @@ function ToolInputRenderer(props: ToolInputRendererProps) {
   }
 
   return (
-    <pre className="text-xs text-slate-300 bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto">
+    <pre className="text-xs theme-text-secondary theme-surface border theme-border-strong rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto">
       {JSON.stringify(input, null, 2)}
     </pre>
   );
@@ -314,9 +338,9 @@ function ToolResultRenderer(props: ToolResultRendererProps) {
 
   if (!content || content.trim().length === 0) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-teal-500/10 border border-teal-500/20 rounded-lg mt-2">
-        <Check size={14} className="text-teal-400" />
-        <span className="text-xs text-teal-300">Completed successfully</span>
+      <div className="flex items-center gap-2 px-3 py-2 success-btn rounded-lg mt-2 border">
+        <Check size={14} />
+        <span className="text-xs">Completed successfully</span>
       </div>
     );
   }
@@ -329,12 +353,12 @@ function ToolResultRenderer(props: ToolResultRendererProps) {
     <pre
       className={`text-xs rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto border ${
         isError
-          ? "bg-rose-950/30 text-rose-200/80 border-rose-900/30"
-          : "bg-teal-950/30 text-teal-200/80 border-teal-900/30"
+          ? "error-btn"
+          : "success-btn"
       }`}
     >
       {displayContent}
-      {truncated && <span className="text-zinc-500">... ({content.length - maxLength} more chars)</span>}
+      {truncated && <span className="theme-text-muted">... ({content.length - maxLength} more chars)</span>}
     </pre>
   );
 }
@@ -350,7 +374,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
     }
     if (isUser) {
       return (
-        <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">
+        <div className="whitespace-pre-wrap break-words text-[14px] leading-relaxed">
           {sanitized}
         </div>
       );
@@ -363,7 +387,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
       <div className={expanded ? "w-full" : ""}>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/15 text-[11px] text-amber-400/90 transition-colors border border-amber-500/20"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg thinking-btn text-[11px] transition-colors border"
         >
           <Lightbulb size={12} className="opacity-70" />
           <span className="font-medium">thinking</span>
@@ -372,7 +396,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
           </span>
         </button>
         {expanded && (
-          <pre className="text-xs text-zinc-400 bg-zinc-900/80 border border-zinc-800 rounded-lg p-3 mt-2 whitespace-pre-wrap max-h-80 overflow-y-auto">
+          <pre className="text-xs theme-text-secondary theme-elevated border theme-border rounded-lg p-3 mt-2 whitespace-pre-wrap max-h-80 overflow-y-auto">
             {block.thinking}
           </pre>
         )}
@@ -406,12 +430,12 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
       <div className={isExpanded ? "w-full" : ""}>
         <button
           onClick={() => hasInput && !shouldAutoExpand && setExpanded(!expanded)}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-500/10 hover:bg-slate-500/15 text-[11px] text-slate-300 transition-colors border border-slate-500/20"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg tool-btn text-[11px] transition-colors border"
         >
           <Icon size={12} className="opacity-60" />
-          <span className="font-medium text-slate-200">{block.name}</span>
+          <span className="font-medium">{block.name}</span>
           {preview && (
-            <span className="text-slate-500 font-normal truncate max-w-[200px]">
+            <span className="opacity-70 font-normal truncate max-w-[200px]">
               {preview}
             </span>
           )}
@@ -426,7 +450,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
         ) : (
           expanded &&
           hasInput && (
-            <pre className="text-xs text-slate-300 bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto">
+            <pre className="text-xs theme-text-secondary theme-surface border theme-border-strong rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto">
               {JSON.stringify(input, null, 2)}
             </pre>
           )
@@ -457,8 +481,8 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
           onClick={() => hasContent && setExpanded(!expanded)}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] transition-colors border ${
             isError
-              ? "bg-rose-500/10 hover:bg-rose-500/15 text-rose-400/90 border-rose-500/20"
-              : "bg-teal-500/10 hover:bg-teal-500/15 text-teal-400/90 border-teal-500/20"
+              ? "error-btn"
+              : "success-btn"
           }`}
         >
           {isError ? (
@@ -469,7 +493,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
           <span className="font-medium">{isError ? "error" : "result"}</span>
           {contentPreview && !expanded && (
             <span
-              className={`font-normal truncate max-w-[200px] ${isError ? "text-rose-500/70" : "text-teal-500/70"}`}
+              className={`font-normal truncate max-w-[200px] opacity-70`}
             >
               {contentPreview}
             </span>

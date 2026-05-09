@@ -16,17 +16,17 @@ function getStatusIcon(status: string) {
   if (status === "in_progress") {
     return <Loader2 size={14} className="text-amber-400 animate-spin" />;
   }
-  return <Circle size={14} className="text-zinc-500" />;
+  return <Circle size={14} className="theme-text-muted" />;
 }
 
 function getStatusClass(status: string) {
   if (status === "completed") {
-    return "text-zinc-400 line-through";
+    return "theme-text-tertiary line-through";
   }
   if (status === "in_progress") {
-    return "text-amber-200";
+    return "text-amber-400";
   }
-  return "text-zinc-300";
+  return "theme-text-secondary";
 }
 
 export function TodoRenderer(props: TodoRendererProps) {
@@ -41,28 +41,28 @@ export function TodoRenderer(props: TodoRendererProps) {
 
   return (
     <div className="w-full mt-2">
-      <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-lg overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-700/50 bg-zinc-800/30">
+      <div className="theme-surface border theme-border-strong rounded-lg overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2 border-b theme-border-strong bg-[var(--bg-surface-hover)]">
           <ListTodo size={14} className="text-violet-400" />
-          <span className="text-xs font-medium text-zinc-300">Tasks</span>
-          <span className="text-xs text-zinc-500 ml-auto">
+          <span className="text-xs font-medium theme-text-secondary">Tasks</span>
+          <span className="text-xs theme-text-muted ml-auto">
             {completedCount}/{totalCount}
           </span>
-          <div className="w-16 h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+          <div className="w-16 h-1.5 bg-[var(--bg-surface-hover)] rounded-full overflow-hidden">
             <div
               className="h-full bg-violet-500 transition-all duration-300"
               style={{ width: `${(completedCount / totalCount) * 100}%` }}
             />
           </div>
         </div>
-        <ul className="divide-y divide-zinc-800/50">
+        <ul className="divide-y divide-[var(--border-subtle)]">
           {todos.map((todo, index) => (
             <li
               key={index}
-              className="flex items-start gap-2.5 px-3 py-2 hover:bg-zinc-800/20 transition-colors"
+              className="flex items-start gap-2.5 px-3 py-2 hover:bg-[var(--bg-surface-hover)] transition-colors"
             >
               <span className="mt-0.5 flex-shrink-0">{getStatusIcon(todo.status)}</span>
-              <span className={`text-xs leading-relaxed ${getStatusClass(todo.status)}`}>
+              <span className={`text-[13px] leading-relaxed ${getStatusClass(todo.status)}`}>
                 {todo.content}
               </span>
             </li>

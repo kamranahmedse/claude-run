@@ -27,19 +27,147 @@
   font-display: swap;
 }
 
+/* ==================== Theme Variables ==================== */
+
 :root {
   color-scheme: dark;
+
+  --bg-page: #09090b;
+  --bg-surface: #18181b;
+  --bg-surface-hover: #27272a;
+  --bg-elevated: rgba(24, 24, 27, 0.8);
+  --bg-selected: rgba(6, 182, 212, 0.3);
+
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --text-muted: #52525b;
+
+  --border-default: rgba(63, 63, 70, 0.6);
+  --border-subtle: rgba(63, 63, 70, 0.4);
+  --border-strong: rgba(63, 63, 70, 0.5);
+
+  --bubble-user-bg: rgba(37, 99, 235, 0.8);
+  --bubble-user-text: rgba(219, 234, 254, 1);
+  --bubble-assistant-bg: rgba(26, 107, 119, 0.5);
+  --bubble-assistant-text: #fafafa;
+
+  --link-color: #22d3ee;
+
+  --code-inline-bg: rgba(39, 39, 42, 0.8);
+  --code-inline-text: #67e8f9;
+  --code-block-bg: #18181b;
+  --code-block-text: #d4d4d8;
+
+  --thinking-bg: rgba(245, 158, 11, 0.1);
+  --thinking-text: rgba(251, 191, 36, 0.9);
+  --thinking-border: rgba(245, 158, 11, 0.2);
+
+  --tool-bg: rgba(100, 116, 139, 0.1);
+  --tool-text: #cbd5e1;
+  --tool-border: rgba(100, 116, 139, 0.2);
+
+  --success-bg: rgba(20, 184, 166, 0.1);
+  --success-text: rgba(45, 212, 191, 0.9);
+  --success-border: rgba(20, 184, 166, 0.2);
+
+  --error-bg: rgba(244, 63, 94, 0.1);
+  --error-text: rgba(251, 113, 133, 0.9);
+  --error-border: rgba(244, 63, 94, 0.2);
+
+  --diff-add-bg: rgba(6, 95, 70, 0.2);
+  --diff-add-text: #6ee7b7;
+  --diff-add-border: #10b981;
+  --diff-remove-bg: rgba(127, 29, 29, 0.2);
+  --diff-remove-text: #fda4af;
+  --diff-remove-border: #f43f5e;
+
+  --scroll-thumb: #27272a;
+  --scroll-thumb-hover: #3f3f46;
+
+  --select-bg: #18181b;
+  --select-text: #e4e4e7;
+
+  --input-bg: transparent;
+  --btn-bg: #27272a;
+  --btn-hover: #3f3f46;
 }
 
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-page: #ffffff;
+  --bg-surface: #f4f4f5;
+  --bg-surface-hover: #e4e4e7;
+  --bg-elevated: #fafafa;
+  --bg-selected: rgba(6, 182, 212, 0.15);
+
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-tertiary: #71717a;
+  --text-muted: #a1a1aa;
+
+  --border-default: #e4e4e7;
+  --border-subtle: #f4f4f5;
+  --border-strong: #d4d4d8;
+
+  --bubble-user-bg: #3b82f6;
+  --bubble-user-text: #ffffff;
+  --bubble-assistant-bg: #ecfeff;
+  --bubble-assistant-text: #27272a;
+
+  --link-color: #0891b2;
+
+  --code-inline-bg: #f4f4f5;
+  --code-inline-text: #0891b2;
+  --code-block-bg: #fafafa;
+  --code-block-text: #3f3f46;
+
+  --thinking-bg: #fffbeb;
+  --thinking-text: #d97706;
+  --thinking-border: #fde68a;
+
+  --tool-bg: #f1f5f9;
+  --tool-text: #475569;
+  --tool-border: #e2e8f0;
+
+  --success-bg: #f0fdfa;
+  --success-text: #0d9488;
+  --success-border: #99f6e4;
+
+  --error-bg: #fff1f2;
+  --error-text: #e11d48;
+  --error-border: #fecdd3;
+
+  --diff-add-bg: #ecfdf5;
+  --diff-add-text: #047857;
+  --diff-add-border: #10b981;
+  --diff-remove-bg: #fff1f2;
+  --diff-remove-text: #be123c;
+  --diff-remove-border: #f43f5e;
+
+  --scroll-thumb: #d4d4d8;
+  --scroll-thumb-hover: #a1a1aa;
+
+  --select-bg: #ffffff;
+  --select-text: #27272a;
+
+  --input-bg: #ffffff;
+  --btn-bg: #f4f4f5;
+  --btn-hover: #e4e4e7;
+}
+
+/* ==================== Base ==================== */
+
 body {
-  font-family: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
-    Consolas, monospace;
-  background: #09090b;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg-page);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #27272a transparent;
+  scrollbar-color: var(--scroll-thumb) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -52,28 +180,83 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--scroll-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--scroll-thumb-hover);
 }
 
 pre {
-  background: #18181b;
+  background: var(--bg-surface);
   border-radius: 8px;
   padding: 12px;
   overflow-x: auto;
 }
 
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.875rem;
 }
 
-select option {
-  background: #18181b;
-  color: #e4e4e7;
+pre code {
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
+
+select option {
+  background: var(--select-bg);
+  color: var(--select-text);
+}
+
+/* ==================== Semantic Utility Classes ==================== */
+
+/* --- Layout --- */
+.theme-page { background: var(--bg-page); color: var(--text-primary); }
+.theme-surface { background: var(--bg-surface); }
+.theme-surface-hover:hover { background: var(--bg-surface-hover); }
+.theme-elevated { background: var(--bg-elevated); }
+.theme-selected { background: var(--bg-selected); }
+
+/* --- Text --- */
+.theme-text-primary { color: var(--text-primary); }
+.theme-text-secondary { color: var(--text-secondary); }
+.theme-text-tertiary { color: var(--text-tertiary); }
+.theme-text-muted { color: var(--text-muted); }
+
+/* --- Border --- */
+.theme-border { border-color: var(--border-default); }
+.theme-border-subtle { border-color: var(--border-subtle); }
+.theme-border-strong { border-color: var(--border-strong); }
+
+/* --- Bubbles --- */
+.bubble-user { background: var(--bubble-user-bg); color: var(--bubble-user-text); }
+.bubble-assistant { background: var(--bubble-assistant-bg); color: var(--bubble-assistant-text); }
+
+/* --- Links --- */
+.theme-link { color: var(--link-color); }
+
+/* --- Code --- */
+.theme-code-inline { background: var(--code-inline-bg); color: var(--code-inline-text); }
+.theme-code-block { background: var(--code-block-bg); color: var(--code-block-text); }
+
+/* --- Thinking --- */
+.thinking-btn { background: var(--thinking-bg); color: var(--thinking-text); border-color: var(--thinking-border); }
+
+/* --- Tool --- */
+.tool-btn { background: var(--tool-bg); color: var(--tool-text); border-color: var(--tool-border); }
+
+/* --- Result --- */
+.success-btn { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+.error-btn { background: var(--error-bg); color: var(--error-text); border-color: var(--error-border); }
+
+/* --- Diff --- */
+.diff-add { background: var(--diff-add-bg); color: var(--diff-add-text); border-left-color: var(--diff-add-border); }
+.diff-remove { background: var(--diff-remove-bg); color: var(--diff-remove-text); border-left-color: var(--diff-remove-border); }
+
+/* --- Input / Button --- */
+.theme-input { background: var(--input-bg); color: var(--text-primary); border-color: var(--border-strong); }
+.theme-btn { background: var(--btn-bg); color: var(--text-secondary); }
+.theme-btn:hover { background: var(--btn-hover); }
