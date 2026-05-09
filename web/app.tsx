@@ -187,7 +187,13 @@ function App() {
   useEffect(() => {
     fetch("/api/projects")
       .then((res) => res.json())
-      .then(setProjects)
+      .then((list: string[]) => setProjects(
+        list.sort((a, b) => {
+          const nameA = (a.split("/").pop() || a).toLowerCase();
+          const nameB = (b.split("/").pop() || b).toLowerCase();
+          return nameA.localeCompare(nameB);
+        })
+      ))
       .catch(console.error);
   }, []);
 
