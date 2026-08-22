@@ -81,9 +81,6 @@ export function BashResultRenderer(props: BashResultRendererProps) {
   }
 
   const lines = content.split("\n");
-  const maxLines = 30;
-  const truncated = lines.length > maxLines;
-  const displayLines = truncated ? lines.slice(0, maxLines) : lines;
 
   return (
     <div className="w-full mt-2">
@@ -112,18 +109,13 @@ export function BashResultRenderer(props: BashResultRendererProps) {
           )}
           <span className="text-xs text-zinc-500 ml-auto">{lines.length} lines</span>
         </div>
-        <div className="overflow-x-auto max-h-80 overflow-y-auto">
+        <div className="overflow-x-auto">
           <pre
             className={`text-xs font-mono p-3 whitespace-pre-wrap break-all ${
               isError ? "text-rose-200/80" : "text-zinc-300"
             }`}
           >
-            {displayLines.join("\n")}
-            {truncated && (
-              <div className="text-zinc-500 mt-2 pt-2 border-t border-zinc-700/50">
-                ... {lines.length - maxLines} more lines
-              </div>
-            )}
+            {content}
           </pre>
         </div>
       </div>

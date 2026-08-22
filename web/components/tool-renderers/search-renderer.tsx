@@ -119,9 +119,6 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
   }
 
   const lines = content.split("\n").filter((l) => l.trim());
-  const maxLines = 25;
-  const truncated = lines.length > maxLines;
-  const displayLines = truncated ? lines.slice(0, maxLines) : lines;
 
   if (isFileList) {
     return (
@@ -132,9 +129,9 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
             <span className="text-xs font-medium text-zinc-300">Files Found</span>
             <span className="text-xs text-zinc-500 ml-auto">{lines.length} files</span>
           </div>
-          <div className="overflow-y-auto max-h-60">
+          <div>
             <ul className="divide-y divide-zinc-800/50">
-              {displayLines.map((line, index) => (
+              {lines.map((line, index) => (
                 <li key={index} className="group flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-800/30">
                   <FileText size={12} className="text-zinc-500 flex-shrink-0" />
                   <span className="text-xs font-mono text-zinc-300 truncate flex-1">{line}</span>
@@ -144,11 +141,6 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
                 </li>
               ))}
             </ul>
-            {truncated && (
-              <div className="px-3 py-2 text-xs text-zinc-500 border-t border-zinc-700/50">
-                ... {lines.length - maxLines} more files
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -163,14 +155,9 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
           <span className="text-xs font-medium text-zinc-300">Results</span>
           <span className="text-xs text-zinc-500 ml-auto">{lines.length} matches</span>
         </div>
-        <div className="overflow-x-auto max-h-80 overflow-y-auto">
+        <div className="overflow-x-auto">
           <pre className="text-xs font-mono p-3 text-zinc-300 whitespace-pre-wrap">
-            {displayLines.join("\n")}
-            {truncated && (
-              <div className="text-zinc-500 mt-2 pt-2 border-t border-zinc-700/50">
-                ... {lines.length - maxLines} more matches
-              </div>
-            )}
+            {content}
           </pre>
         </div>
       </div>

@@ -152,6 +152,27 @@ interface ContentBlockRendererProps {
   toolMap?: Map<string, string>;
 }
 
+// Keep ordinary blocks open while preventing very large blocks from taking over the conversation.
+const AUTO_COLLAPSE_CHARS = 12000;
+
+function getBlockLength(block: ContentBlock): number {
+  if (block.type === "thinking") {
+    return block.thinking?.length ?? 0;
+  }
+
+  if (block.type === "tool_result") {
+    return typeof block.content === "string"
+      ? block.content.length
+      : JSON.stringify(block.content).length;
+  }
+
+  if (block.type === "tool_use" && block.input) {
+    return JSON.stringify(block.input).length;
+  }
+
+  return 0;
+}
+
 const TOOL_ICONS: Record<string, typeof Wrench> = {
   todowrite: ListTodo,
   read: FileCode,
@@ -280,7 +301,7 @@ function ToolInputRenderer(props: ToolInputRendererProps) {
   }
 
   return (
-    <pre className="text-xs text-slate-300 bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto">
+    <pre className="text-xs text-slate-300 bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all">
       {JSON.stringify(input, null, 2)}
     </pre>
   );
@@ -321,27 +342,22 @@ function ToolResultRenderer(props: ToolResultRendererProps) {
     );
   }
 
-  const maxLength = 2000;
-  const truncated = content.length > maxLength;
-  const displayContent = truncated ? content.slice(0, maxLength) : content;
-
   return (
     <pre
-      className={`text-xs rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto border ${
+      className={`text-xs rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all border ${
         isError
           ? "bg-rose-950/30 text-rose-200/80 border-rose-900/30"
           : "bg-teal-950/30 text-teal-200/80 border-teal-900/30"
       }`}
     >
-      {displayContent}
-      {truncated && <span className="text-zinc-500">... ({content.length - maxLength} more chars)</span>}
+      {content}
     </pre>
   );
 }
 
 function ContentBlockRenderer(props: ContentBlockRendererProps) {
   const { block, isUser, toolMap } = props;
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(() => getBlockLength(block) <= AUTO_COLLAPSE_CHARS);
 
   if (block.type === "text" && block.text) {
     const sanitized = sanitizeText(block.text);
@@ -372,7 +388,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
           </span>
         </button>
         {expanded && (
-          <pre className="text-xs text-zinc-400 bg-zinc-900/80 border border-zinc-800 rounded-lg p-3 mt-2 whitespace-pre-wrap max-h-80 overflow-y-auto">
+          <pre className="text-xs text-zinc-400 bg-zinc-900/80 border border-zinc-800 rounded-lg p-3 mt-2 whitespace-pre-wrap">
             {block.thinking}
           </pre>
         )}
@@ -399,13 +415,12 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
       toolName === "askuserquestion" ||
       toolName === "task";
 
-    const shouldAutoExpand = toolName === "todowrite" || toolName === "askuserquestion" || toolName === "task";
-    const isExpanded = expanded || shouldAutoExpand;
+    const isExpanded = expanded;
 
     return (
       <div className={isExpanded ? "w-full" : ""}>
         <button
-          onClick={() => hasInput && !shouldAutoExpand && setExpanded(!expanded)}
+          onClick={() => hasInput && setExpanded(!expanded)}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-500/10 hover:bg-slate-500/15 text-[11px] text-slate-300 transition-colors border border-slate-500/20"
         >
           <Icon size={12} className="opacity-60" />
@@ -415,7 +430,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
               {preview}
             </span>
           )}
-          {hasInput && !shouldAutoExpand && (
+          {hasInput && (
             <span className="text-[10px] opacity-40 ml-0.5">
               {expanded ? "▼" : "▶"}
             </span>
@@ -426,7 +441,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
         ) : (
           expanded &&
           hasInput && (
-            <pre className="text-xs text-slate-300 bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all max-h-80 overflow-y-auto">
+            <pre className="text-xs text-slate-300 bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 mt-2 overflow-x-auto whitespace-pre-wrap break-all">
               {JSON.stringify(input, null, 2)}
             </pre>
           )
