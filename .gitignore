@@ -33,3 +33,5 @@ npm-debug.log*
 package-lock.json
 yarn.lock
 bun.lockb
+
+TECHNICAL_DOCS.md

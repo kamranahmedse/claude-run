@@ -86,7 +86,7 @@ export function EditRenderer(props: EditRendererProps) {
             <CopyButton text={input.file_path} />
           </div>
         </div>
-        <div className="overflow-x-auto max-h-80 overflow-y-auto">
+        <div className="overflow-x-auto">
           <pre className="text-xs font-mono p-0">
             {parsedLines.map((line, index) => {
               if (line.type === "header") {
@@ -159,7 +159,7 @@ export function WriteRenderer(props: WriteRendererProps) {
             <CopyButton text={input.file_path} />
           </div>
         </div>
-        <div className="overflow-x-auto max-h-60 overflow-y-auto">
+        <div className="overflow-x-auto">
           <pre className="text-xs font-mono p-3 text-zinc-300">
             {preview}
             {isTruncated && (

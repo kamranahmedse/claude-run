@@ -99,9 +99,6 @@ export function FileContentRenderer(props: FileContentRendererProps) {
   }
 
   const lines = content.split("\n");
-  const maxLines = 50;
-  const truncated = lines.length > maxLines;
-  const displayLines = truncated ? lines.slice(0, maxLines) : lines;
 
   const ext = fileName ? getFileExtension(fileName) : "";
   const language = ext ? getLanguageFromExt(ext) : null;
@@ -119,10 +116,10 @@ export function FileContentRenderer(props: FileContentRendererProps) {
           )}
           <span className="text-xs text-zinc-500 ml-auto">{lines.length} lines</span>
         </div>
-        <div className="overflow-x-auto max-h-96 overflow-y-auto">
+        <div className="overflow-x-auto">
           <table className="w-full text-xs font-mono">
             <tbody>
-              {displayLines.map((line, index) => (
+              {lines.map((line, index) => (
                 <tr key={index} className="hover:bg-zinc-800/30">
                   <td className="select-none text-right pr-3 pl-3 py-0.5 text-zinc-600 border-r border-zinc-800 w-10 sticky left-0 bg-zinc-900/70">
                     {index + 1}
@@ -134,11 +131,6 @@ export function FileContentRenderer(props: FileContentRendererProps) {
               ))}
             </tbody>
           </table>
-          {truncated && (
-            <div className="px-3 py-2 text-xs text-zinc-500 border-t border-zinc-700/50">
-              ... {lines.length - maxLines} more lines
-            </div>
-          )}
         </div>
       </div>
     </div>
